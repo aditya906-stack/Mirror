@@ -16,7 +16,7 @@
     "db:generate:prod": "prisma generate --schema=prisma/schema.prod.prisma",
     "db:seed:prod": "bun run prisma/seed.ts",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate --schema=prisma/schema.prod.prisma && prisma db push --schema=prisma/schema.prod.prisma --accept-data-loss && bun run prisma/seed.ts && next build"
+    "vercel-build": "prisma generate --schema=prisma/schema.prod.prisma && prisma db push --schema=prisma/schema.prod.prisma --force-reset && bun run prisma/seed.ts && next build"
   },
   "prisma": {
     "seed": "bun run prisma/seed.ts"
