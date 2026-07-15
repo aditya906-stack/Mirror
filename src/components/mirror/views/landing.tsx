@@ -1,10 +1,12 @@
 "use client";
 
 import { useMirror } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { Wordmark } from "../wordmark";
 
 export function LandingView() {
   const { setView } = useMirror();
+  const t = useT();
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
@@ -12,16 +14,13 @@ export function LandingView() {
         <Wordmark size="large" className="mb-12" />
 
         <p className="font-display text-3xl leading-tight text-ink sm:text-5xl sm:leading-[1.1]">
-          The mirror does not judge.
+          {t("landing.tagline1")}
           <br />
-          <span className="text-ink-soft">It reflects.</span>
+          <span className="text-ink-soft">{t("landing.tagline2")}</span>
         </p>
 
         <p className="mt-8 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
-          Mirror is an instrument that measures the distance between how you see
-          yourself and how the people around you experience you. It does not
-          label you. It does not advise you. It shows you the gap — and lets you
-          sit with it.
+          {t("landing.body")}
         </p>
       </div>
 
@@ -29,18 +28,18 @@ export function LandingView() {
         {[
           {
             n: "01",
-            t: "You rate yourself",
-            d: "On observable behaviors. How often do you interrupt? How often do you follow through? Frequency, not identity.",
+            t: t("landing.step1.t"),
+            d: t("landing.step1.d"),
           },
           {
             n: "02",
-            t: "Your circles observe you",
-            d: "People from your Work, Family, and Friends circles answer the same questions — confidentially. We know the circle. We never reveal the individual.",
+            t: t("landing.step2.t"),
+            d: t("landing.step2.d"),
           },
           {
             n: "03",
-            t: "Mirror shows the gap",
-            d: "The mathematical distance between self-perception and external reality. No red. No green. No verdict. Only what was observed.",
+            t: t("landing.step3.t"),
+            d: t("landing.step3.d"),
           },
         ].map((s) => (
           <div key={s.n} className="bg-paper p-6 sm:p-8">
@@ -59,23 +58,20 @@ export function LandingView() {
 
       <div className="mt-16 border-t border-line-soft pt-10">
         <p className="font-display text-lg italic text-ink-soft">
-          What this is not.
+          {t("landing.not")}
         </p>
         <ul className="mt-4 space-y-2 text-sm text-ink-soft">
           <li className="flex gap-3">
             <span className="text-ink-faint">—</span>
-            <span>Not a personality test. No labels, no types, no diagnoses.</span>
+            <span>{t("landing.not1")}</span>
           </li>
           <li className="flex gap-3">
             <span className="text-ink-faint">—</span>
-            <span>Not therapy. No advice, no healing, no “you should work on this.”</span>
+            <span>{t("landing.not2")}</span>
           </li>
           <li className="flex gap-3">
             <span className="text-ink-faint">—</span>
-            <span>
-              Not anonymous. It is <em>confidential</em>. We know which circle
-              the feedback came from. We hide who said it.
-            </span>
+            <span>{t("landing.not3")}</span>
           </li>
         </ul>
       </div>
@@ -85,13 +81,13 @@ export function LandingView() {
           onClick={() => setView("auth")}
           className="group relative w-full max-w-sm overflow-hidden rounded-sm bg-ink px-8 py-4 text-paper transition-all hover:bg-ink/90 sm:w-auto"
         >
-          <span className="font-display text-lg">Begin</span>
+          <span className="font-display text-lg">{t("landing.begin")}</span>
           <span className="ml-3 text-xs uppercase tracking-widest text-paper/60">
-            Look into the mirror
+            {t("landing.beginSub")}
           </span>
         </button>
         <p className="text-[11px] uppercase tracking-wider text-ink-faint">
-          Takes about four minutes of your time
+          {t("landing.time")}
         </p>
       </div>
     </div>

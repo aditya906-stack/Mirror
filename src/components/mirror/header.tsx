@@ -2,21 +2,40 @@
 
 import { Wordmark } from "./wordmark";
 import { useMirror, type View } from "@/lib/store";
+import { useI18n, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Languages } from "lucide-react";
 
 // The journey through Mirror. Shown as a quiet progress,
 // not a gamified stepper. The user always knows where they are.
-const STEPS: { view: View; label: string }[] = [
-  { view: "behaviors", label: "Select" },
-  { view: "self", label: "Self" },
-  { view: "invite", label: "Invite" },
-  { view: "report", label: "Report" },
+const STEP_KEYS: { view: View; label: string }[] = [
+  { view: "behaviors", label: "nav.select" },
+  { view: "self", label: "nav.self" },
+  { view: "invite", label: "nav.invite" },
+  { view: "report", label: "nav.report" },
 ];
+
+function LangToggle() {
+  const { locale, setLocale } = useI18n();
+  const next: Locale = locale === "en" ? "hinglish" : "en";
+  return (
+    <button
+      onClick={() => setLocale(next)}
+      className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-ink-faint transition-colors hover:text-ink"
+      aria-label="Switch language"
+      title={locale === "en" ? "Hinglish mein dekho" : "View in English"}
+    >
+      <Languages className="h-3.5 w-3.5" />
+      <span>{locale === "en" ? "EN" : "Hinglish"}</span>
+    </button>
+  );
+}
 
 export function Header() {
   const { view, setView, user, signOut } = useMirror();
+  const { t } = useI18n();
 
-  const activeIndex = STEPS.findIndex((s) => s.view === view);
+  const activeIndex = STEP_KEYS.findIndex((s) => s.view === view);
   const showSteps =
     view === "behaviors" ||
     view === "self" ||
@@ -34,10 +53,10 @@ export function Header() {
           <Wordmark size="small" />
         </button>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           {showSteps && (
             <nav className="hidden items-center gap-1 sm:flex" aria-label="Progress">
-              {STEPS.map((s, i) => {
+              {STEP_KEYS.map((s, i) => {
                 const done = i < activeIndex;
                 const active = i === activeIndex;
                 return (
@@ -56,9 +75,9 @@ export function Header() {
                       <span className="font-mono mr-1.5 opacity-50">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      {s.label}
+                      {t(s.label)}
                     </button>
-                    {i < STEPS.length - 1 && (
+                    {i < STEP_KEYS.length - 1 && (
                       <span className="text-ink-faint/40">·</span>
                     )}
                   </div>
@@ -67,6 +86,8 @@ export function Header() {
             </nav>
           )}
 
+          <LangToggle />
+
           {user && (
             <div className="flex items-center gap-3">
               <span className="hidden text-[11px] text-ink-soft sm:inline">
@@ -74,16 +95,12 @@ export function Header() {
               </span>
               <button
                 onClick={async () => {
-                  if (
-                    confirm(
-                      "Sign out? Your data remains. You can sign back in anytime."
-                    )
-                  )
+                  if (confirm(t("nav.signoutConfirm")))
                     await signOut();
                 }}
                 className="text-[11px] uppercase tracking-wider text-ink-faint hover:text-ink transition-colors"
               >
-                Sign out
+                {t("nav.signout")}
               </button>
             </div>
           )}

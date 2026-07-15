@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { GapBar } from "../gap-bar";
 import { ratingLabel } from "../rating-scale";
 import { toast } from "sonner";
@@ -21,6 +22,27 @@ type BehaviorRow = {
   circles: CircleAgg[];
 };
 
+type Summary = {
+  overallSelf: number;
+  overallExternal: number;
+  overallGap: number;
+  direction: "higher" | "lower" | "aligned";
+  overestimateCount: number;
+  underestimateCount: number;
+  alignedCount: number;
+  categoryGaps: { category: string; avgGap: number; count: number }[];
+  widestGaps: {
+    id: string;
+    text: string;
+    category: string;
+    selfRating: number;
+    externalAverage: number;
+    gap: number;
+  }[];
+};
+
+type BookRec = { title: string; author: string; note: string };
+
 type Report = {
   subject: { name: string };
   behaviors: BehaviorRow[];
@@ -30,12 +52,16 @@ type Report = {
   behaviorCount: number;
   hasSelfAssessment: boolean;
   hasAnyFeedback: boolean;
+  summary: Summary | null;
+  books: BookRec[];
 };
 
 export function ReportView() {
   const { setView } = useMirror();
+  const t = useT();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showFull, setShowFull] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +69,7 @@ export function ReportView() {
         const res = await api.get<Report>("/api/report");
         setReport(res);
       } catch {
-        toast.error("Could not load your report.");
+        toast.error(t("report.errLoad"));
       } finally {
         setLoading(false);
       }
@@ -54,7 +80,7 @@ export function ReportView() {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 sm:px-8">
         <p className="font-display text-2xl text-ink-faint">
-          Preparing your reflection…
+          {t("report.loading")}
         </p>
       </div>
     );
@@ -71,73 +97,55 @@ export function ReportView() {
     behaviorCount,
     hasSelfAssessment,
     hasAnyFeedback,
+    summary,
+    books,
   } = report;
 
-  // Compute the largest gap for the headline stat.
-  const gapsWithMag = behaviors
-    .filter((b) => b.gap !== null)
-    .map((b) => ({ id: b.id, mag: Math.abs(b.gap!) }));
-  const largestGap = gapsWithMag.reduce(
-    (max, g) => (g.mag > max ? g.mag : max),
-    0
-  );
+  const totalPaired =
+    summary !== null
+      ? summary.overestimateCount +
+        summary.underestimateCount +
+        summary.alignedCount
+      : 0;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
-      {/* Report header */}
+      {/* ── Report header ────────────────────────────────────── */}
       <div className="mb-16 border-b border-line pb-10">
         <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          The Mirror Report
+          {t("report.tag")}
         </span>
         <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-6xl sm:leading-[1.05]">
           {subject.name}
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">
-          {behaviorCount > 0 && (
-            <>
-              {behaviorCount} {behaviorCount === 1 ? "behavior" : "behaviors"}{" "}
-              reflected
-            </>
-          )}
-          {hasAnyFeedback && (
-            <>
-              {" · "}observed by {completedProviders}{" "}
-              {completedProviders === 1 ? "person" : "people"} across{" "}
-              {circles.length} {circles.length === 1 ? "circle" : "circles"}
-            </>
-          )}
-          .
+          {hasAnyFeedback
+            ? t("report.meta", {
+                n: behaviorCount,
+                p: completedProviders,
+                c: circles.length,
+              })
+            : behaviorCount > 0
+            ? `${behaviorCount} ${t(
+                behaviorCount === 1 ? "report.behaviorCount" : "report.behaviorsCount",
+                { n: behaviorCount }
+              )} reflected.`
+            : ""}
         </p>
-
-        {/* Summary stats */}
-        <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
-          <Stat label="Behaviors" value={String(behaviorCount)} />
-          <Stat
-            label="Observers"
-            value={`${completedProviders}/${totalProviders}`}
-          />
-          <Stat label="Circles" value={String(circles.length)} />
-          <Stat
-            label="Largest gap"
-            value={largestGap > 0 ? largestGap.toFixed(1) : "—"}
-          />
-        </div>
       </div>
 
-      {/* Empty states */}
+      {/* ── Empty states ─────────────────────────────────────── */}
       {!hasSelfAssessment && (
         <div className="border border-line bg-surface p-8 text-center">
           <p className="font-display text-xl text-ink">
-            You haven’t rated yourself yet.
+            {t("report.noSelf.h")}
           </p>
-          <p className="mt-2 text-sm text-ink-soft">
-            Complete your self-assessment to begin the reflection.
-          </p>
+          <p className="mt-2 text-sm text-ink-soft">{t("report.noSelf.d")}</p>
           <button
             onClick={() => setView("self")}
             className="mt-6 rounded-sm bg-ink px-6 py-3 text-paper font-display transition-colors hover:bg-ink/90"
           >
-            Rate yourself
+            {t("report.noSelf.btn")}
           </button>
         </div>
       )}
@@ -145,65 +153,190 @@ export function ReportView() {
       {hasSelfAssessment && !hasAnyFeedback && (
         <div className="border border-line bg-surface p-8 text-center">
           <p className="font-display text-xl text-ink">
-            Your circles have not yet responded.
+            {t("report.noFeedback.h")}
           </p>
           <p className="mt-2 text-sm text-ink-soft">
-            Your self-perception is recorded. Once your circles return their
-            observations, the gaps will appear here.
+            {t("report.noFeedback.d")}
           </p>
           <button
             onClick={() => setView("invite")}
             className="mt-6 rounded-sm bg-ink px-6 py-3 text-paper font-display transition-colors hover:bg-ink/90"
           >
-            Manage invitations
+            {t("report.noFeedback.btn")}
           </button>
+        </div>
+      )}
 
-          {/* Show self-perception only, as a preview */}
-          {behaviors.length > 0 && (
-            <div className="mt-12 text-left">
-              <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Your self-perception — awaiting external reality
-              </p>
-              <ul className="space-y-4">
-                {behaviors.map((b) => (
+      {/* ── The Path B report ────────────────────────────────── */}
+      {hasSelfAssessment && hasAnyFeedback && summary && (
+        <div className="space-y-20">
+          {/* 1. The reflection — a consolidated, observable summary */}
+          <section>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              {t("report.reflection")}
+            </span>
+            <ReflectionSummary
+              summary={summary}
+              totalPaired={totalPaired}
+            />
+          </section>
+
+          {/* 2. Worth sitting with — gentle nudges, never commands */}
+          {summary.widestGaps.length > 0 && (
+            <section>
+              <h2 className="mb-6 font-display text-2xl text-ink">
+                {t("report.worthSitting")}
+              </h2>
+              <ul className="space-y-6">
+                {summary.widestGaps.slice(0, 3).map((g) => {
+                  const nudgeKey =
+                    g.gap > 0.5
+                      ? "report.nudgeHigher"
+                      : g.gap < -0.5
+                      ? "report.nudgeLower"
+                      : "report.nudgeAligned";
+                  return (
+                    <li
+                      key={g.id}
+                      className="border-l-2 border-ink-faint/40 pl-5"
+                    >
+                      <p className="font-display text-lg leading-snug text-ink">
+                        {g.text}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                        {t("report.worthLine", {
+                          self: g.selfRating.toFixed(1),
+                          ext: g.externalAverage.toFixed(1),
+                          nudge: t(nudgeKey),
+                        })}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {/* 3. By category — where the distance lives */}
+          {summary.categoryGaps.length > 0 && (
+            <section>
+              <h2 className="mb-6 font-display text-2xl text-ink">
+                {t("report.whereDistance")}
+              </h2>
+              <ul className="space-y-3">
+                {summary.categoryGaps.map((cg) => (
                   <li
-                    key={b.id}
-                    className="flex items-center justify-between gap-4 border-b border-line-soft pb-3"
+                    key={cg.category}
+                    className="flex items-center gap-4 border-b border-line-soft pb-3"
                   >
-                    <span className="font-display text-sm text-ink-soft">
-                      {b.text}
+                    <span className="flex-1 font-display text-base text-ink">
+                      {cg.category}
                     </span>
-                    <span className="font-display text-base text-ink">
-                      {b.selfRating !== null
-                        ? `${b.selfRating} · ${ratingLabel(b.selfRating)}`
-                        : "—"}
+                    <span className="text-[11px] uppercase tracking-wider text-ink-faint">
+                      {cg.count === 1
+                        ? t("report.behaviorCount", { n: cg.count })
+                        : t("report.behaviorsCount", { n: cg.count })}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-display text-lg tabular-nums",
+                        Math.abs(cg.avgGap) < 0.5
+                          ? "text-ink-soft"
+                          : "text-ink"
+                      )}
+                    >
+                      {cg.avgGap > 0 ? "+" : ""}
+                      {cg.avgGap.toFixed(1)}
                     </span>
                   </li>
                 ))}
               </ul>
-            </div>
+              <p className="mt-4 text-[11px] leading-relaxed text-ink-faint">
+                {t("report.categoryNote")}
+              </p>
+            </section>
           )}
-        </div>
-      )}
 
-      {/* The report itself — gaps */}
-      {hasSelfAssessment && hasAnyFeedback && (
-        <div className="space-y-16">
-          {/* Intro line */}
-          <p className="font-display text-lg italic leading-relaxed text-ink-soft">
-            Below, each behavior is shown with the distance between how you
-            rated yourself and how your circles observed you. The largest
-            distances come first.
-          </p>
+          {/* 4. Book recommendations — static-mapped, non-prescriptive */}
+          {books.length > 0 && (
+            <section>
+              <h2 className="mb-4 font-display text-2xl leading-snug text-ink">
+                {t("report.books.h")}
+                <br className="hidden sm:block" />
+                <span className="text-ink-soft">{t("report.books.h2")}</span>
+              </h2>
+              <ul className="mt-6 space-y-5">
+                {books.map((book) => (
+                  <li
+                    key={book.title}
+                    className="border border-line bg-surface px-5 py-5"
+                  >
+                    <p className="font-display text-lg text-ink">
+                      {book.title}
+                    </p>
+                    <p className="mt-1 text-[11px] uppercase tracking-widest text-ink-faint">
+                      {book.author}
+                    </p>
+                    <p className="mt-2 text-sm italic leading-relaxed text-ink-soft">
+                      {book.note}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-[11px] leading-relaxed text-ink-faint">
+                {t("report.booksNote")}
+              </p>
+            </section>
+          )}
 
-          {behaviors.map((b, idx) => (
-            <BehaviorReport key={b.id} behavior={b} index={idx} />
-          ))}
-
-          {/* Circle breakdown summary */}
+          {/* 5. The full reflection — expandable question-by-question detail */}
           <section className="border-t border-line pt-10">
-            <h2 className="mb-6 font-display text-xl text-ink">
-              By circle
+            {!showFull ? (
+              <button
+                onClick={() => setShowFull(true)}
+                className="group flex w-full items-center justify-between text-left"
+              >
+                <div>
+                  <p className="font-display text-2xl text-ink">
+                    {t("report.seeFull")}
+                  </p>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    {t("report.seeFullD", { n: behaviors.length })}
+                  </p>
+                </div>
+                <span className="ml-6 font-display text-2xl text-ink-faint transition-transform group-hover:translate-y-0.5">
+                  +
+                </span>
+              </button>
+            ) : (
+              <div>
+                <button
+                  onClick={() => setShowFull(false)}
+                  className="mb-10 flex w-full items-center justify-between text-left"
+                >
+                  <p className="font-display text-2xl text-ink">
+                    {t("report.fullReflection")}
+                  </p>
+                  <span className="ml-6 font-display text-2xl text-ink-faint">
+                    −
+                  </span>
+                </button>
+                <p className="mb-12 font-display text-lg italic leading-relaxed text-ink-soft">
+                  {t("report.fullIntro")}
+                </p>
+                <div className="space-y-12">
+                  {behaviors.map((b, idx) => (
+                    <BehaviorReport key={b.id} behavior={b} index={idx} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 6. By circle */}
+          <section className="border-t border-line pt-10">
+            <h2 className="mb-6 font-display text-2xl text-ink">
+              {t("report.byCircle")}
             </h2>
             <ul className="divide-y divide-line-soft">
               {circles.map((c) => (
@@ -212,9 +345,14 @@ export function ReportView() {
                   className="flex items-center justify-between py-4"
                 >
                   <div>
-                    <p className="font-display text-base text-ink">{c.circle}</p>
+                    <p className="font-display text-base text-ink">
+                      {c.circle}
+                    </p>
                     <p className="text-[11px] uppercase tracking-wider text-ink-faint">
-                      {c.completed} of {c.invited} responded
+                      {t("report.responded", {
+                        completed: c.completed,
+                        invited: c.invited,
+                      })}
                     </p>
                   </div>
                 </li>
@@ -222,11 +360,10 @@ export function ReportView() {
             </ul>
           </section>
 
-          {/* Closing note */}
+          {/* 7. Closing note */}
           <section className="border-t border-line pt-10">
             <p className="font-display text-lg italic leading-relaxed text-ink-soft">
-              This is what was observed. The mirror does not say what it means,
-              or what you should do. That is yours to sit with.
+              {t("report.closing")}
             </p>
           </section>
         </div>
@@ -238,7 +375,7 @@ export function ReportView() {
             onClick={() => setView("invite")}
             className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
           >
-            ← Invitations
+            {t("report.invitations")}
           </button>
           <button
             onClick={() => {
@@ -248,7 +385,7 @@ export function ReportView() {
             }}
             className="text-[11px] uppercase tracking-widest text-ink-soft hover:text-ink transition-colors"
           >
-            Refresh
+            {t("report.refresh")}
           </button>
         </div>
       </div>
@@ -256,17 +393,102 @@ export function ReportView() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+// ── The consolidated summary ────────────────────────────────
+// Observable patterns, not labels. Reads like a paragraph a
+// trusted friend might write — not a diagnosis.
+function ReflectionSummary({
+  summary,
+  totalPaired,
+}: {
+  summary: Summary;
+  totalPaired: number;
+}) {
+  const t = useT();
+  const {
+    overallSelf,
+    overallExternal,
+    overallGap,
+    direction,
+    overestimateCount,
+    underestimateCount,
+    alignedCount,
+    widestGaps,
+  } = summary;
+
+  const selfLabel = ratingLabel(overallSelf);
+  const extLabel = ratingLabel(overallExternal);
+
   return (
-    <div className="bg-paper p-4 sm:p-5">
-      <p className="text-[10px] uppercase tracking-widest text-ink-faint">
-        {label}
-      </p>
-      <p className="mt-1 font-display text-2xl text-ink sm:text-3xl">{value}</p>
+    <div className="mt-6">
+      {/* The two numbers, side by side */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden border border-line bg-line">
+        <div className="bg-paper p-5 sm:p-6">
+          <p className="text-[10px] uppercase tracking-widest text-ink-faint">
+            {t("report.selfAvg")}
+          </p>
+          <p className="mt-2 font-display text-4xl text-ink sm:text-5xl">
+            {overallSelf.toFixed(1)}
+          </p>
+          <p className="mt-1 text-[11px] text-ink-soft">
+            {selfLabel} · {t("report.onAverage")}
+          </p>
+        </div>
+        <div className="bg-paper p-5 sm:p-6">
+          <p className="text-[10px] uppercase tracking-widest text-ink-faint">
+            {t("report.extAvg")}
+          </p>
+          <p className="mt-2 font-display text-4xl text-ink sm:text-5xl">
+            {overallExternal.toFixed(1)}
+          </p>
+          <p className="mt-1 text-[11px] text-ink-soft">
+            {extLabel} · {t("report.onAverage")}
+          </p>
+        </div>
+      </div>
+
+      {/* The narrative */}
+      <div className="mt-8 space-y-4 text-base leading-relaxed text-ink-soft">
+        {direction === "aligned" && (
+          <p>
+            {t("report.dirAligned", {
+              gap: Math.abs(overallGap).toFixed(1),
+              aligned: alignedCount,
+              total: totalPaired,
+            })}
+          </p>
+        )}
+        {direction === "higher" && (
+          <p>
+            {t("report.dirHigher", {
+              gap: Math.abs(overallGap).toFixed(1),
+              count: overestimateCount,
+            })}
+          </p>
+        )}
+        {direction === "lower" && (
+          <p>
+            {t("report.dirLower", {
+              gap: Math.abs(overallGap).toFixed(1),
+              count: underestimateCount,
+            })}
+          </p>
+        )}
+
+        {widestGaps.length > 0 && (
+          <p>
+            {t("report.widest", {
+              behavior: widestGaps[0].text.toLowerCase(),
+              self: widestGaps[0].selfRating.toFixed(1),
+              ext: widestGaps[0].externalAverage.toFixed(1),
+            })}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
+// ── Per-behavior detail (shown when "full reflection" is expanded) ─
 function BehaviorReport({
   behavior,
   index,
@@ -274,21 +496,22 @@ function BehaviorReport({
   behavior: BehaviorRow;
   index: number;
 }) {
+  const t = useT();
   const { selfRating, externalAverage, gap, circles, text, category } =
     behavior;
 
-  const direction =
+  const dirKey =
     gap === null
       ? null
       : gap > 0
-      ? "Observed more than you perceive"
+      ? "report.detail.dirMore"
       : gap < 0
-      ? "Observed less than you perceive"
-      : "Aligned with your self-perception";
+      ? "report.detail.dirLess"
+      : "report.detail.dirAligned";
 
   return (
-    <article className="border-b border-line-soft pb-12">
-      <div className="mb-6 flex items-baseline gap-3">
+    <article className="border-b border-line-soft pb-10">
+      <div className="mb-4 flex items-baseline gap-3">
         <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {String(index + 1).padStart(2, "0")}
         </span>
@@ -297,46 +520,34 @@ function BehaviorReport({
         </span>
       </div>
 
-      <h3 className="mb-8 font-display text-2xl leading-snug text-ink sm:text-3xl">
+      <h3 className="mb-6 font-display text-xl leading-snug text-ink sm:text-2xl">
         {text}
       </h3>
 
-      {/* The gap numbers — prominent */}
-      <div className="mb-8 grid grid-cols-3 gap-4">
+      <div className="mb-6 grid grid-cols-3 gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-widest text-ink-faint">
-            Self
+            {t("report.detail.self")}
           </p>
-          <p className="mt-1 font-display text-3xl text-ink sm:text-4xl">
+          <p className="mt-1 font-display text-2xl text-ink sm:text-3xl">
             {selfRating !== null ? selfRating.toFixed(1) : "—"}
           </p>
-          {selfRating !== null && (
-            <p className="mt-1 text-[11px] text-ink-soft">
-              {ratingLabel(selfRating)}
-            </p>
-          )}
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-widest text-ink-faint">
-            Observed
+            {t("report.detail.observed")}
           </p>
-          <p className="mt-1 font-display text-3xl text-ink sm:text-4xl">
+          <p className="mt-1 font-display text-2xl text-ink sm:text-3xl">
             {externalAverage !== null ? externalAverage.toFixed(1) : "—"}
           </p>
-          {externalAverage !== null && (
-            <p className="mt-1 text-[11px] text-ink-soft">
-              {ratingLabel(externalAverage)} · {behavior.externalCount}{" "}
-              {behavior.externalCount === 1 ? "observer" : "observers"}
-            </p>
-          )}
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-widest text-ink-faint">
-            Gap
+            {t("report.detail.gap")}
           </p>
           <p
             className={cn(
-              "mt-1 font-display text-3xl sm:text-4xl",
+              "mt-1 font-display text-2xl sm:text-3xl",
               gap === null
                 ? "text-ink-faint"
                 : Math.abs(gap) < 0.5
@@ -348,24 +559,19 @@ function BehaviorReport({
               ? `${gap > 0 ? "+" : ""}${gap.toFixed(1)}`
               : "—"}
           </p>
-          {direction && (
-            <p className="mt-1 text-[11px] text-ink-soft">{direction}</p>
-          )}
         </div>
       </div>
 
-      {/* The visualization */}
       <GapBar
         selfRating={selfRating}
         externalAverage={externalAverage}
         gap={gap}
       />
 
-      {/* Per-circle breakdown */}
       {circles.length > 0 && (
-        <div className="mt-8 border-t border-line-soft pt-4">
-          <p className="mb-3 text-[10px] uppercase tracking-widest text-ink-faint">
-            By circle
+        <div className="mt-6 border-t border-line-soft pt-3">
+          <p className="mb-2 text-[10px] uppercase tracking-widest text-ink-faint">
+            {t("report.detail.byCircle")}
           </p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {circles.map((c) => (
@@ -384,6 +590,10 @@ function BehaviorReport({
             ))}
           </ul>
         </div>
+      )}
+
+      {dirKey && (
+        <p className="mt-3 text-[11px] italic text-ink-faint">{t(dirKey)}</p>
       )}
     </article>
   );

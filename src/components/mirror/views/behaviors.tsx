@@ -5,10 +5,12 @@ import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 type Behavior = { id: string; text: string };
 
 export function BehaviorsView() {
+  const t = useT();
   const { setView } = useMirror();
   const [grouped, setGrouped] = useState<Record<string, Behavior[]>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -27,7 +29,7 @@ export function BehaviorsView() {
         setGrouped(behaviorsRes.grouped);
         setSelected(new Set(selectionsRes.selections.map((s) => s.id)));
       } catch {
-        toast.error("Could not load the behavioral instrument.");
+        toast.error(t("behaviors.errLoad"));
       } finally {
         setLoading(false);
       }
@@ -45,7 +47,7 @@ export function BehaviorsView() {
 
   async function handleContinue() {
     if (selected.size < MIN) {
-      toast.error(`Select at least ${MIN} behaviors.`);
+      toast.error(t("behaviors.errMin", { n: MIN }));
       return;
     }
     setSaving(true);
@@ -53,7 +55,7 @@ export function BehaviorsView() {
       await api.post("/api/selections", { behaviorIds: Array.from(selected) });
       setView("self");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save.");
+      toast.error(err instanceof Error ? err.message : t("behaviors.errSave"));
     } finally {
       setSaving(false);
     }
@@ -62,7 +64,7 @@ export function BehaviorsView() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 sm:px-8">
-        <p className="font-display text-2xl text-ink-faint">Loading the instrument…</p>
+        <p className="font-display text-2xl text-ink-faint">{t("behaviors.loading")}</p>
       </div>
     );
   }
@@ -71,18 +73,16 @@ export function BehaviorsView() {
     <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
       <div className="mb-12">
         <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          Step 02 — The instrument
+          {t("behaviors.tag")}
         </span>
         <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-          What should be observed?
+          {t("behaviors.h")}
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">
-          These are observable behaviors — things others can witness and count.
-          Choose the ones you want reflected back to you. You will rate yourself
-          on each, and so will your circles.
+          {t("behaviors.body")}
         </p>
         <p className="mt-3 text-sm text-ink-faint">
-          Select at least {MIN}. Most people choose 8–12.
+          {t("behaviors.min", { n: MIN })}
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export function BehaviorsView() {
             <h2 className="mb-4 flex items-baseline gap-3 border-b border-line-soft pb-2">
               <span className="font-display text-lg text-ink">{category}</span>
               <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
-                {behaviors.length} behaviors
+                {behaviors.length} {t("behaviors.behaviors")}
               </span>
             </h2>
             <ul className="space-y-1">
@@ -144,7 +144,7 @@ export function BehaviorsView() {
           <div className="flex items-baseline gap-2">
             <span className="font-display text-2xl text-ink">{selected.size}</span>
             <span className="text-[11px] uppercase tracking-wider text-ink-soft">
-              selected
+              {t("behaviors.selected")}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -152,7 +152,7 @@ export function BehaviorsView() {
               onClick={() => setView("landing")}
               className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
             >
-              ← Back
+              {t("behaviors.back")}
             </button>
             <button
               onClick={handleContinue}
@@ -160,7 +160,7 @@ export function BehaviorsView() {
               className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:opacity-40"
             >
               <span className="font-display text-base">
-                {saving ? "Saving…" : "Continue"}
+                {saving ? t("behaviors.saving") : t("behaviors.continue")}
               </span>
             </button>
           </div>

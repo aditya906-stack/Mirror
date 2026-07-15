@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMirror } from "@/lib/store";
+import { LocaleProvider } from "@/lib/i18n";
 import { Header } from "@/components/mirror/header";
 import { Footer } from "@/components/mirror/footer";
 import { LandingView } from "@/components/mirror/views/landing";
@@ -14,10 +15,9 @@ import { ReportView } from "@/components/mirror/views/report";
 import { FeedbackView } from "@/components/mirror/views/feedback";
 
 function AppContent() {
-  const { view, user, hydrated, restore, setView } = useMirror();
+  const { view, user, hydrated, restore } = useMirror();
 
   // Restore the session from the httpOnly cookie on first mount.
-  // While waiting, show nothing (the Suspense fallback covers it).
   useEffect(() => {
     restore();
   }, [restore]);
@@ -66,14 +66,16 @@ function RouteSwitch() {
 
 export default function Home() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="font-display text-2xl text-ink-faint">Mirror</p>
-        </div>
-      }
-    >
-      <RouteSwitch />
-    </Suspense>
+    <LocaleProvider>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <p className="font-display text-2xl text-ink-faint">Mirror</p>
+          </div>
+        }
+      >
+        <RouteSwitch />
+      </Suspense>
+    </LocaleProvider>
   );
 }

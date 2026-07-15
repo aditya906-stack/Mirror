@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { useMirror, type AuthUser } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 
 // The gateway to Mirror.
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 
 export function AuthView() {
   const { authMode, setAuthMode, setUser, setView } = useMirror();
+  const t = useT();
   const isSignup = authMode === "signup";
 
   const [username, setUsername] = useState("");
@@ -26,11 +28,11 @@ export function AuthView() {
     const p = password;
 
     if (!u || !p) {
-      toast.error("Username and password are required.");
+      toast.error(t("auth.errRequired"));
       return;
     }
     if (isSignup && !name.trim()) {
-      toast.error("Your name is needed — circles need to know who they're observing.");
+      toast.error(t("auth.errName"));
       return;
     }
 
@@ -42,7 +44,9 @@ export function AuthView() {
         : { username: u, password: p };
       const { user } = await api.post<{ user: AuthUser }>(endpoint, body);
       setUser(user);
-      toast.success(isSignup ? "Account created." : `Welcome back, ${user.name}.`);
+      toast.success(
+        isSignup ? t("auth.signupSuccess") : t("auth.signinSuccess", { name: user.name })
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -54,15 +58,13 @@ export function AuthView() {
     <div className="mx-auto flex min-h-[calc(100vh-200px)] max-w-xl flex-col justify-center px-5 py-16 sm:px-8">
       <div className="mb-12">
         <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          {isSignup ? "Create your mirror" : "Return to your mirror"}
+          {isSignup ? t("auth.signup.tag") : t("auth.signin.tag")}
         </span>
         <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-          {isSignup ? "Begin the reflection" : "Welcome back"}
+          {isSignup ? t("auth.signup.h") : t("auth.signin.h")}
         </h1>
         <p className="mt-4 text-base leading-relaxed text-ink-soft">
-          {isSignup
-            ? "Choose a username and password. Your name will appear on the invitations you send, so your circles know who they are observing."
-            : "Sign in with your username to continue where you left off."}
+          {isSignup ? t("auth.signup.body") : t("auth.signin.body")}
         </p>
       </div>
 
@@ -73,14 +75,14 @@ export function AuthView() {
               htmlFor="name"
               className="mb-2 block text-[11px] uppercase tracking-widest text-ink-soft"
             >
-              Your name
+              {t("auth.name")}
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="As others know you"
+              placeholder={t("auth.namePlaceholder")}
               className="w-full border-b border-line bg-transparent py-3 font-display text-2xl text-ink placeholder:text-ink-faint/50 focus:border-ink focus:outline-none transition-colors"
               autoFocus
             />
@@ -92,14 +94,14 @@ export function AuthView() {
             htmlFor="username"
             className="mb-2 block text-[11px] uppercase tracking-widest text-ink-soft"
           >
-            Username
+            {t("auth.username")}
           </label>
           <input
             id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="How you'll sign in"
+            placeholder={t("auth.usernamePlaceholder")}
             autoComplete="username"
             className="w-full border-b border-line bg-transparent py-3 font-display text-2xl text-ink placeholder:text-ink-faint/50 focus:border-ink focus:outline-none transition-colors"
             autoFocus={!isSignup}
@@ -111,14 +113,18 @@ export function AuthView() {
             htmlFor="password"
             className="mb-2 block text-[11px] uppercase tracking-widest text-ink-soft"
           >
-            Password
+            {t("auth.password")}
           </label>
           <input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isSignup ? "At least 6 characters" : "••••••••"}
+            placeholder={
+              isSignup
+                ? t("auth.passwordPlaceholderSignup")
+                : t("auth.passwordPlaceholderSignin")
+            }
             autoComplete={isSignup ? "new-password" : "current-password"}
             className="w-full border-b border-line bg-transparent py-3 font-display text-2xl text-ink placeholder:text-ink-faint/50 focus:border-ink focus:outline-none transition-colors"
           />
@@ -130,7 +136,7 @@ export function AuthView() {
             onClick={() => setView("landing")}
             className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
           >
-            ← Back
+            {t("auth.back")}
           </button>
           <button
             type="submit"
@@ -139,22 +145,22 @@ export function AuthView() {
           >
             <span className="font-display text-lg">
               {loading
-                ? "One moment…"
+                ? t("auth.loading")
                 : isSignup
-                ? "Create account"
-                : "Sign in"}
+                ? t("auth.signup.btn")
+                : t("auth.signin.btn")}
             </span>
           </button>
         </div>
       </form>
 
       <p className="mt-10 text-sm text-ink-soft">
-        {isSignup ? "Already have an account?" : "New to Mirror?"}{" "}
+        {isSignup ? t("auth.signup.toggle") : t("auth.signin.toggle")}{" "}
         <button
           onClick={() => setAuthMode(isSignup ? "signin" : "signup")}
           className="font-display text-ink underline-offset-4 hover:underline transition-colors"
         >
-          {isSignup ? "Sign in" : "Create one"}
+          {isSignup ? t("auth.signup.toggleLink") : t("auth.signin.toggleLink")}
         </button>
       </p>
     </div>

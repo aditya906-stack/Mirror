@@ -13,6 +13,61 @@ import { getSessionUser } from "@/lib/auth";
 // We never judge the gap. A gap of 2.4 is not "bad."
 // A gap of 0.2 is not "good." They are distances. The mirror
 // reflects; the human interprets.
+//
+// The response carries:
+//   - behaviors:  per-behavior rows (self, observed, gap, circles)
+//   - summary:    consolidated aggregates for the Path B report
+//   - books:      static-mapped recommendations from gap patterns
+//   - circles:    per-circle provider counts
+
+type BookRec = {
+  title: string;
+  author: string;
+  note: string;
+};
+
+const BOOKS: Record<string, BookRec> = {
+  Communication: {
+    title: "Crucial Conversations",
+    author: "Patterson, Grenny, McMillan, Switzler",
+    note: "on speaking honestly when the stakes are high",
+  },
+  "Emotional Presence": {
+    title: "Atlas of the Heart",
+    author: "Brené Brown",
+    note: "on naming what you feel and letting others see it",
+  },
+  Leadership: {
+    title: "Dare to Lead",
+    author: "Brené Brown",
+    note: "on being seen while you lead",
+  },
+  Relational: {
+    title: "Hold Me Tight",
+    author: "Sue Johnson",
+    note: "on the patterns that live between people",
+  },
+  Reliability: {
+    title: "Atomic Habits",
+    author: "James Clear",
+    note: "on doing what you said you would, reliably",
+  },
+  overestimate: {
+    title: "Thinking, Fast and Slow",
+    author: "Daniel Kahneman",
+    note: "on the quiet blind spots in self-assessment",
+  },
+  underestimate: {
+    title: "The Gifts of Imperfection",
+    author: "Brené Brown",
+    note: "on letting yourself be seen, as you are",
+  },
+  aligned: {
+    title: "Quiet",
+    author: "Susan Cain",
+    note: "on the dignity of being accurately known",
+  },
+};
 
 export async function GET(req: NextRequest) {
   const sessionUser = await getSessionUser(req);
@@ -45,8 +100,7 @@ export async function GET(req: NextRequest) {
     selfMap.set(s.behaviorId, s.rating);
   }
 
-  // Build per-circle, per-beavior aggregates from all feedback.
-  // circle -> behaviorId -> [ratings]
+  // Build per-circle, per-behavior aggregates from all feedback.
   const circleBehaviorRatings = new Map<
     string,
     Map<string, number[]>
@@ -85,7 +139,6 @@ export async function GET(req: NextRequest) {
   const behaviors = selected.map((s) => {
     const selfRating = selfMap.get(s.behavior.id) ?? null;
 
-    // Collect per-circle aggregates for this behavior.
     const perCircle: {
       circle: string;
       average: number;
@@ -134,9 +187,6 @@ export async function GET(req: NextRequest) {
   });
 
   // Sort behaviors: those with the largest absolute gap first.
-  // This is not a judgment — it simply surfaces where self-perception
-  // and external reality diverge most. The mirror shows the biggest
-  // distances first.
   behaviors.sort((a, b) => {
     const aMag = a.gap === null ? -1 : Math.abs(a.gap);
     const bMag = b.gap === null ? -1 : Math.abs(b.gap);
@@ -148,6 +198,147 @@ export async function GET(req: NextRequest) {
     (i) => i.status === "completed"
   ).length;
 
+  // ── Summary aggregates for the Path B report ───────────────
+  // Only behaviors where BOTH self and external exist contribute.
+  const paired = behaviors.filter(
+    (b) => b.selfRating !== null && b.externalAverage !== null && b.gap !== null
+  ) as (typeof behaviors[number] & {
+    selfRating: number;
+    externalAverage: number;
+    gap: number;
+  })[];
+
+  let summary: {
+    overallSelf: number | null;
+    overallExternal: number | null;
+    overallGap: number | null;
+    direction: "higher" | "lower" | "aligned";
+    overestimateCount: number;
+    underestimateCount: number;
+    alignedCount: number;
+    categoryGaps: { category: string; avgGap: number; count: number }[];
+    widestGaps: {
+      id: string;
+      text: string;
+      category: string;
+      selfRating: number;
+      externalAverage: number;
+      gap: number;
+    }[];
+  } | null = null;
+
+  let books: BookRec[] = [];
+
+  if (paired.length > 0) {
+    const overallSelf =
+      Math.round(
+        (paired.reduce((a, b) => a + b.selfRating, 0) / paired.length) * 10
+      ) / 10;
+    const overallExternal =
+      Math.round(
+        (paired.reduce((a, b) => a + b.externalAverage, 0) / paired.length) *
+          10
+      ) / 10;
+    const overallGap = Math.round((overallExternal - overallSelf) * 10) / 10;
+
+    const overestimateCount = paired.filter((b) => b.gap < -0.5).length;
+    const underestimateCount = paired.filter((b) => b.gap > 0.5).length;
+    const alignedCount = paired.filter((b) => Math.abs(b.gap) < 0.5).length;
+
+    const direction: "higher" | "lower" | "aligned" =
+      overallGap > 0.5
+        ? "lower" // external sees higher → you underestimate yourself
+        : overallGap < -0.5
+        ? "higher" // external sees lower → you overestimate yourself
+        : "aligned";
+
+    // Per-category average gap (sorted by magnitude, widest first).
+    const catMap = new Map<string, number[]>();
+    for (const b of paired) {
+      if (!catMap.has(b.category)) catMap.set(b.category, []);
+      catMap.get(b.category)!.push(b.gap);
+    }
+    const categoryGaps = Array.from(catMap.entries())
+      .map(([category, gaps]) => ({
+        category,
+        avgGap:
+          Math.round(
+            (gaps.reduce((a, c) => a + c, 0) / gaps.length) * 10
+          ) / 10,
+        count: gaps.length,
+      }))
+      .sort((a, b) => Math.abs(b.avgGap) - Math.abs(a.avgGap));
+
+    // Widest gaps (top 3 by magnitude).
+    const widestGaps = [...paired]
+      .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+      .slice(0, 3)
+      .map((b) => ({
+        id: b.id,
+        text: b.text,
+        category: b.category,
+        selfRating: b.selfRating,
+        externalAverage: b.externalAverage,
+        gap: b.gap,
+      }));
+
+    summary = {
+      overallSelf,
+      overallExternal,
+      overallGap,
+      direction,
+      overestimateCount,
+      underestimateCount,
+      alignedCount,
+      categoryGaps: categoryGaps,
+      widestGaps,
+    };
+
+    // ── Book recommendations (static-mapped from gap patterns) ─
+    // Non-prescriptive: framed as "readers whose reflections showed a
+    // similar pattern often sat with…" — never "you should read this."
+    const picked: BookRec[] = [];
+    const seen = new Set<string>();
+
+    // 1. The category with the widest average gap.
+    if (categoryGaps.length > 0 && Math.abs(categoryGaps[0].avgGap) >= 0.8) {
+      const cat = categoryGaps[0].category;
+      if (BOOKS[cat] && !seen.has(cat)) {
+        picked.push(BOOKS[cat]);
+        seen.add(cat);
+      }
+    }
+
+    // 2. Overall direction.
+    if (direction === "higher" && !seen.has("overestimate")) {
+      picked.push(BOOKS.overestimate);
+      seen.add("overestimate");
+    } else if (direction === "lower" && !seen.has("underestimate")) {
+      picked.push(BOOKS.underestimate);
+      seen.add("underestimate");
+    } else if (direction === "aligned" && !seen.has("aligned")) {
+      picked.push(BOOKS.aligned);
+      seen.add("aligned");
+    }
+
+    // 3. A second category if there's another wide one.
+    for (const cg of categoryGaps) {
+      if (picked.length >= 3) break;
+      if (Math.abs(cg.avgGap) < 0.8) continue;
+      if (seen.has(cg.category)) continue;
+      if (!BOOKS[cg.category]) continue;
+      picked.push(BOOKS[cg.category]);
+      seen.add(cg.category);
+    }
+
+    // Fallback: if nothing was picked (all aligned), give the aligned book.
+    if (picked.length === 0) {
+      picked.push(BOOKS.aligned);
+    }
+
+    books = picked;
+  }
+
   return NextResponse.json({
     subject: { name: user.name },
     behaviors,
@@ -157,5 +348,7 @@ export async function GET(req: NextRequest) {
     behaviorCount: selected.length,
     hasSelfAssessment: selfAssessments.length > 0,
     hasAnyFeedback: completedProviders > 0,
+    summary,
+    books,
   });
 }

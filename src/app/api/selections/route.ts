@@ -20,6 +20,11 @@ export async function GET(req: NextRequest) {
       id: s.behavior.id,
       text: s.behavior.text,
       category: s.behavior.category,
+      format: s.behavior.format,
+      prompt: s.behavior.prompt,
+      options: s.behavior.options
+        ? (JSON.parse(s.behavior.options) as string[])
+        : null,
     })),
   });
 }

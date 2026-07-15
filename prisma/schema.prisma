@@ -29,11 +29,21 @@ model User {
 }
 
 // An observable behavior. Never a label, never a diagnosis.
-// Always phrased so it can be witnessed and rated on frequency.
+// Always phrased so it can be witnessed and rated.
+//
+// `format` controls how the question is presented:
+//   frequency — the behavior text + Never→Almost always scale (1-5)
+//   agreement — the behavior text + Strongly disagree→Strongly agree (1-5)
+//   scenario  — `prompt` (a situation with {subject}) + `options` (5 choices, 1-5)
+// The stored rating is always 1-5 regardless of format, so the gap
+// between self-perception and external reality stays mathematically sound.
 model Behavior {
   id        String   @id @default(cuid())
   text      String   @unique
   category  String
+  format    String   @default("frequency")
+  prompt    String?
+  options   String?
   createdAt DateTime @default(now())
 
   userBehaviors     UserBehavior[]

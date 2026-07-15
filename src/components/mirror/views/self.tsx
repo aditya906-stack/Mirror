@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
-import { RatingScale, SCALE_LABELS } from "../rating-scale";
+import { Question, type BehaviorQuestion } from "../question";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
-type Behavior = { id: string; text: string; category: string };
+type Behavior = BehaviorQuestion & { category: string };
 
 export function SelfView() {
+  const t = useT();
   const { setView } = useMirror();
   const [grouped, setGrouped] = useState<Record<string, Behavior[]>>({});
   const [ratings, setRatings] = useState<Record<string, number>>({});
@@ -29,14 +31,13 @@ export function SelfView() {
           if (!g[s.category]) g[s.category] = [];
           g[s.category].push(s);
         }
-        // sort categories
         const sorted = Object.keys(g).sort();
         const ordered: Record<string, Behavior[]> = {};
         for (const k of sorted) ordered[k] = g[k];
         setGrouped(ordered);
         setRatings(selfRes.assessments);
       } catch {
-        toast.error("Could not load your assessment.");
+        toast.error(t("self.errLoad"));
       } finally {
         setLoading(false);
       }
@@ -49,16 +50,16 @@ export function SelfView() {
 
   async function handleContinue() {
     if (!complete) {
-      toast.error("Rate every behavior to continue.");
+      toast.error(t("self.errComplete"));
       return;
     }
     setSaving(true);
     try {
       await api.post("/api/self-assessment", { ratings });
-      toast.success("Self-assessment recorded.");
+      toast.success(t("self.success"));
       setView("invite");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save.");
+      toast.error(err instanceof Error ? err.message : t("self.errSave"));
     } finally {
       setSaving(false);
     }
@@ -67,7 +68,7 @@ export function SelfView() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 sm:px-8">
-        <p className="font-display text-2xl text-ink-faint">Loading…</p>
+        <p className="font-display text-2xl text-ink-faint">{t("self.loading")}</p>
       </div>
     );
   }
@@ -76,13 +77,13 @@ export function SelfView() {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8">
         <p className="font-display text-2xl text-ink-soft">
-          You haven’t selected any behaviors yet.
+          {t("self.empty")}
         </p>
         <button
           onClick={() => setView("behaviors")}
           className="mt-6 text-[11px] uppercase tracking-widest text-ink underline underline-offset-4"
         >
-          Choose behaviors →
+          {t("self.emptyLink")}
         </button>
       </div>
     );
@@ -92,30 +93,14 @@ export function SelfView() {
     <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
       <div className="mb-12">
         <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          Step 03 — Self-perception
+          {t("self.tag")}
         </span>
         <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-          How do you see yourself?
+          {t("self.h")}
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">
-          Rate yourself honestly on each behavior. This is your baseline — the
-          self-perception that Mirror will hold up against external reality.
-          There are no right answers. There is only what you believe to be true.
+          {t("self.body")}
         </p>
-
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-line-soft py-4">
-          <span className="text-[11px] uppercase tracking-widest text-ink-faint">
-            The scale
-          </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-soft">
-            {SCALE_LABELS.map((l, i) => (
-              <span key={l} className="flex items-center gap-1.5">
-                <span className="font-mono text-ink">{i + 1}</span>
-                <span className="uppercase tracking-wider">{l}</span>
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
 
       <div className="space-y-14">
@@ -134,17 +119,16 @@ export function SelfView() {
                         ratings[b.id] ? "bg-ink" : "bg-ink-faint/30"
                       )}
                     />
-                    <p className="font-display text-lg leading-snug text-ink sm:text-xl">
-                      {b.text}
-                    </p>
-                  </div>
-                  <div className="pl-6">
-                    <RatingScale
-                      value={ratings[b.id] ?? null}
-                      onChange={(v) =>
-                        setRatings((prev) => ({ ...prev, [b.id]: v }))
-                      }
-                    />
+                    <div className="flex-1">
+                      <Question
+                        behavior={b}
+                        value={ratings[b.id] ?? null}
+                        onChange={(v) =>
+                          setRatings((prev) => ({ ...prev, [b.id]: v }))
+                        }
+                        subject="you"
+                      />
+                    </div>
                   </div>
                 </li>
               ))}
@@ -158,7 +142,7 @@ export function SelfView() {
           <div className="flex items-baseline gap-2">
             <span className="font-display text-2xl text-ink">{answered}</span>
             <span className="text-[11px] uppercase tracking-wider text-ink-soft">
-              of {total} answered
+              {t("self.answered", { total })}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -166,7 +150,7 @@ export function SelfView() {
               onClick={() => setView("behaviors")}
               className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
             >
-              ← Back
+              {t("self.back")}
             </button>
             <button
               onClick={handleContinue}
@@ -174,7 +158,7 @@ export function SelfView() {
               className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:opacity-40"
             >
               <span className="font-display text-base">
-                {saving ? "Saving…" : "Continue"}
+                {saving ? t("self.saving") : t("self.continue")}
               </span>
             </button>
           </div>

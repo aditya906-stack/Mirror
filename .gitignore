@@ -63,4 +63,5 @@ prisma/*.db
 worklog.md
 
 # Skills directory
-/skills/
+/skills/tool-results/
+skills/

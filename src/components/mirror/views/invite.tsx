@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type Invitation = {
   id: string;
@@ -18,21 +19,13 @@ type Invitation = {
 };
 
 const CIRCLES = [
-  {
-    name: "Work",
-    desc: "Colleagues, managers, reports. People who see you under professional pressure.",
-  },
-  {
-    name: "Family",
-    desc: "Partner, parents, siblings. People who have known you longest.",
-  },
-  {
-    name: "Friends",
-    desc: "Close friends. People who see you when you are most yourself.",
-  },
+  { name: "Work", labelKey: "invite.work", descKey: "invite.workDesc" },
+  { name: "Family", labelKey: "invite.family", descKey: "invite.familyDesc" },
+  { name: "Friends", labelKey: "invite.friends", descKey: "invite.friendsDesc" },
 ];
 
 export function InviteView() {
+  const t = useT();
   const { setView } = useMirror();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +42,7 @@ export function InviteView() {
         );
         setInvitations(res.invitations);
       } catch {
-        toast.error("Could not load invitations.");
+        toast.error(t("invite.errLoad"));
       } finally {
         setLoading(false);
       }
@@ -59,7 +52,7 @@ export function InviteView() {
   async function addInvitation(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) {
-      toast.error("Enter a name for this person.");
+      toast.error(t("invite.errName"));
       return;
     }
     setAdding(true);
@@ -70,9 +63,9 @@ export function InviteView() {
       );
       setInvitations((prev) => [invitation, ...prev]);
       setNewName("");
-      toast.success(`Invitation prepared for ${invitation.providerName}.`);
+      toast.success(t("invite.successPrepared", { name: invitation.providerName }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not add.");
+      toast.error(err instanceof Error ? err.message : t("invite.errAdd"));
     } finally {
       setAdding(false);
     }
@@ -83,22 +76,22 @@ export function InviteView() {
     try {
       await navigator.clipboard.writeText(url);
       setCopiedToken(token);
-      toast.success("Link copied to clipboard.");
+      toast.success(t("invite.successCopied"));
       setTimeout(() => setCopiedToken(null), 2500);
     } catch {
-      toast.error("Could not copy. Here is the link: " + url);
+      toast.error(t("invite.errCopy", { url }));
     }
   }
 
   async function removeInvitation(id: string) {
-    if (!confirm("Withdraw this invitation? Any submitted feedback will be removed."))
+    if (!confirm(t("invite.withdrawConfirm")))
       return;
     try {
       await api.del(`/api/invitations?id=${id}`);
       setInvitations((prev) => prev.filter((i) => i.id !== id));
-      toast.success("Invitation withdrawn.");
+      toast.success(t("invite.successWithdrawn"));
     } catch {
-      toast.error("Could not withdraw.");
+      toast.error(t("invite.errWithdraw"));
     }
   }
 
@@ -110,23 +103,20 @@ export function InviteView() {
     <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
       <div className="mb-12">
         <span className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          Step 04 — External reality
+          {t("invite.tag")}
         </span>
         <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-          Invite your circles.
+          {t("invite.h")}
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-soft">
-          Send a confidential link to people in your life. They will answer the
-          same questions about you — but they will never see your
-          self-assessment, and you will never see who said what.
+          {t("invite.body")}
         </p>
 
         <div className="mt-6 border border-line bg-surface px-5 py-4">
           <p className="text-sm leading-relaxed text-ink-soft">
-            <span className="font-display text-ink">Confidential, not anonymous.</span>{" "}
-            Mirror records which circle each response came from — that context
-            gives the data meaning. But the identity of each individual is
-            hidden from you in the final report.
+            <span className="font-display text-ink">
+              {t("invite.confNote")}
+            </span>
           </p>
         </div>
       </div>
@@ -137,27 +127,27 @@ export function InviteView() {
         className="mb-12 border border-line bg-surface p-5 sm:p-6"
       >
         <h2 className="mb-4 font-display text-lg text-ink">
-          Prepare an invitation
+          {t("invite.prepare")}
         </h2>
         <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
           <div>
             <label className="mb-2 block text-[11px] uppercase tracking-widest text-ink-soft">
-              Their name
+              {t("invite.theirName")}
             </label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Maya, my manager"
+              placeholder={t("invite.namePlaceholder")}
               className="w-full border-b border-line bg-transparent py-2 font-display text-lg text-ink placeholder:text-ink-faint/50 focus:border-ink focus:outline-none transition-colors"
             />
             <p className="mt-1.5 text-[11px] text-ink-faint">
-              A label only you see. Helps you track who you invited.
+              {t("invite.nameHint")}
             </p>
           </div>
           <div>
             <label className="mb-2 block text-[11px] uppercase tracking-widest text-ink-soft">
-              Circle
+              {t("invite.circle")}
             </label>
             <select
               value={newCircle}
@@ -166,7 +156,7 @@ export function InviteView() {
             >
               {CIRCLES.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}
+                  {t(c.labelKey)}
                 </option>
               ))}
             </select>
@@ -178,7 +168,7 @@ export function InviteView() {
             disabled={adding}
             className="inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-2.5 text-paper transition-all hover:bg-ink/90 disabled:opacity-50"
           >
-            <span className="font-display text-sm">Prepare invitation</span>
+            <span className="font-display text-sm">{t("invite.prepareBtn")}</span>
           </button>
         </div>
       </form>
@@ -193,13 +183,13 @@ export function InviteView() {
           return (
             <div key={c.name} className="border border-line-soft p-4">
               <div className="flex items-baseline justify-between">
-                <span className="font-display text-base text-ink">{c.name}</span>
+                <span className="font-display text-base text-ink">{t(c.labelKey)}</span>
                 <span className="font-mono text-[10px] text-ink-faint">
                   {done}/{count}
                 </span>
               </div>
               <p className="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
-                {c.desc}
+                {t(c.descKey)}
               </p>
             </div>
           );
@@ -209,19 +199,19 @@ export function InviteView() {
       {/* Existing invitations */}
       <div>
         <h2 className="mb-4 flex items-baseline gap-3 border-b border-line-soft pb-2">
-          <span className="font-display text-lg text-ink">Invitations</span>
+          <span className="font-display text-lg text-ink">{t("invite.invitations")}</span>
           <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
-            {completedCount} of {invitations.length} returned
+            {completedCount} {t("invite.returned", { n: invitations.length })}
           </span>
         </h2>
 
         {loading ? (
           <p className="py-8 text-center font-display text-ink-faint">
-            Loading…
+            {t("invite.loading")}
           </p>
         ) : invitations.length === 0 ? (
           <p className="py-12 text-center text-sm text-ink-faint italic">
-            No invitations yet. Prepare one above.
+            {t("invite.empty")}
           </p>
         ) : (
           <ul className="divide-y divide-line-soft">
@@ -246,8 +236,8 @@ export function InviteView() {
                     <p className="text-[11px] uppercase tracking-wider text-ink-faint">
                       {inv.circle}
                       {inv.status === "completed"
-                        ? ` · ${inv.feedbackCount} responses`
-                        : " · pending"}
+                        ? ` · ${t("invite.responses", { n: inv.feedbackCount })}`
+                        : ` · ${t("invite.pending")}`}
                     </p>
                   </div>
                 </div>
@@ -261,14 +251,14 @@ export function InviteView() {
                         : "border-line text-ink-soft hover:border-ink hover:text-ink"
                     )}
                   >
-                    {copiedToken === inv.token ? "Copied" : "Copy link"}
+                    {copiedToken === inv.token ? t("invite.copied") : t("invite.copyLink")}
                   </button>
                   <button
                     onClick={() => removeInvitation(inv.id)}
                     className="rounded-sm border border-line px-3 py-2 text-[11px] uppercase tracking-wider text-ink-faint transition-colors hover:border-ink hover:text-ink"
-                    aria-label="Withdraw"
+                    aria-label={t("invite.withdraw")}
                   >
-                    Withdraw
+                    {t("invite.withdraw")}
                   </button>
                 </div>
               </li>
@@ -284,7 +274,7 @@ export function InviteView() {
               {completedCount}
             </span>
             <span className="text-[11px] uppercase tracking-wider text-ink-soft">
-              responses received
+              {t("invite.responsesReceived")}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -292,14 +282,14 @@ export function InviteView() {
               onClick={() => setView("self")}
               className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
             >
-              ← Back
+              {t("invite.back")}
             </button>
             <button
               onClick={() => setView("report")}
               className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90"
             >
               <span className="font-display text-base">
-                {completedCount > 0 ? "View report" : "Continue"}
+                {completedCount > 0 ? t("invite.viewReport") : t("invite.continue")}
               </span>
             </button>
           </div>
