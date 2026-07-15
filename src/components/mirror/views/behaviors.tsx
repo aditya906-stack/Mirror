@@ -149,7 +149,7 @@ export function BehaviorsView() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setView("setup")}
+              onClick={() => setView("landing")}
               className="text-[11px] uppercase tracking-widest text-ink-faint hover:text-ink-soft transition-colors"
             >
               ← Back

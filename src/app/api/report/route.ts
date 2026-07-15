@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
 
 // THE REPORT.
 //
@@ -14,10 +15,11 @@ import { db } from "@/lib/db";
 // reflects; the human interprets.
 
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const sessionUser = await getSessionUser(req);
+  if (!sessionUser) {
     return NextResponse.json({ error: "No session." }, { status: 401 });
   }
+  const userId = sessionUser.id;
 
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) {

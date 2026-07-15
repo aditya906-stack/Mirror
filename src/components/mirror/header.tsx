@@ -14,7 +14,7 @@ const STEPS: { view: View; label: string }[] = [
 ];
 
 export function Header() {
-  const { view, setView, userName, clearSession } = useMirror();
+  const { view, setView, user, signOut } = useMirror();
 
   const activeIndex = STEPS.findIndex((s) => s.view === view);
   const showSteps =
@@ -67,23 +67,23 @@ export function Header() {
             </nav>
           )}
 
-          {userName && (
+          {user && (
             <div className="flex items-center gap-3">
               <span className="hidden text-[11px] text-ink-soft sm:inline">
-                {userName}
+                {user.name}
               </span>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (
                     confirm(
-                      "End this session? Your data remains, but you will return to the start."
+                      "Sign out? Your data remains. You can sign back in anytime."
                     )
                   )
-                    clearSession();
+                    await signOut();
                 }}
                 className="text-[11px] uppercase tracking-wider text-ink-faint hover:text-ink transition-colors"
               >
-                Reset
+                Sign out
               </button>
             </div>
           )}

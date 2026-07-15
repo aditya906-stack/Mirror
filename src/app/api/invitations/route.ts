@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
 
 // GET — all invitations the user has issued, with completion counts.
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ invitations: [] });
   }
+  const userId = user.id;
 
   const invitations = await db.invitation.findMany({
     where: { userId },
@@ -33,10 +35,11 @@ export async function GET(req: NextRequest) {
 // POST — issue a new confidential invitation.
 // Body: { providerName: string, circle: string }
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ error: "No session." }, { status: 401 });
   }
+  const userId = user.id;
 
   const body = await req.json();
   const { providerName, circle } = body as {
@@ -69,10 +72,11 @@ export async function POST(req: NextRequest) {
 
 // DELETE — withdraw an invitation.
 export async function DELETE(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ error: "No session." }, { status: 401 });
   }
+  const userId = user.id;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

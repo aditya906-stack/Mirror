@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMirror } from "@/lib/store";
 import { Header } from "@/components/mirror/header";
 import { Footer } from "@/components/mirror/footer";
 import { LandingView } from "@/components/mirror/views/landing";
-import { SetupView } from "@/components/mirror/views/setup";
+import { AuthView } from "@/components/mirror/views/auth";
 import { BehaviorsView } from "@/components/mirror/views/behaviors";
 import { SelfView } from "@/components/mirror/views/self";
 import { InviteView } from "@/components/mirror/views/invite";
@@ -14,18 +14,33 @@ import { ReportView } from "@/components/mirror/views/report";
 import { FeedbackView } from "@/components/mirror/views/feedback";
 
 function AppContent() {
-  const { view, userId } = useMirror();
+  const { view, user, hydrated, restore, setView } = useMirror();
 
-  // If there's no session but the view expects one, send to landing.
+  // Restore the session from the httpOnly cookie on first mount.
+  // While waiting, show nothing (the Suspense fallback covers it).
+  useEffect(() => {
+    restore();
+  }, [restore]);
+
+  // If there's no session but the view expects one, send to auth.
   const effectiveView =
-    !userId && view !== "landing" && view !== "setup" ? "landing" : view;
+    !user && view !== "landing" && view !== "auth" ? "auth" : view;
+
+  // While the session is being restored, avoid flashing the wrong view.
+  if (!hydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="font-display text-2xl text-ink-faint">Mirror</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
         {effectiveView === "landing" && <LandingView />}
-        {effectiveView === "setup" && <SetupView />}
+        {effectiveView === "auth" && <AuthView />}
         {effectiveView === "behaviors" && <BehaviorsView />}
         {effectiveView === "self" && <SelfView />}
         {effectiveView === "invite" && <InviteView />}

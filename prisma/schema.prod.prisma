@@ -17,12 +17,16 @@ datasource db {
 }
 
 // The subject of reflection — the person looking into the mirror.
+// Auth is username + password. Email is optional (for future verification).
+// `name` is the display name shown on invitations to circles.
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   selfAssessments  SelfAssessment[]
   invitations      Invitation[]

@@ -1,31 +1,17 @@
-// Thin API client. Injects the session user-id header on every request
-// so backend routes can identify the subject of reflection.
-
-const USER_ID_KEY = "mirror:userId";
-
-export function getUserId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(USER_ID_KEY);
-}
-
-export function setUserId(id: string | null) {
-  if (typeof window === "undefined") return;
-  if (id) localStorage.setItem(USER_ID_KEY, id);
-  else localStorage.removeItem(USER_ID_KEY);
-}
+// Thin API client. Authentication is handled by an httpOnly cookie set by
+// /api/auth/signup and /api/auth/signin — the browser sends it automatically
+// with every same-origin request, so no manual header is needed.
 
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const userId = getUserId();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (userId) headers["x-user-id"] = userId;
 
-  const res = await fetch(path, { ...options, headers });
+  const res = await fetch(path, { ...options, headers, credentials: "same-origin" });
   const data = await res.json();
   if (!res.ok) {
     throw new Error((data as { error?: string }).error || "Request failed");

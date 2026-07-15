@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
 
 // GET the behaviors a user has chosen to be assessed on.
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ selections: [] });
   }
+  const userId = user.id;
 
   const selections = await db.userBehavior.findMany({
     where: { userId },
@@ -26,10 +28,11 @@ export async function GET(req: NextRequest) {
 // Body: { behaviorIds: string[] }
 // This replaces any prior selection.
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ error: "No session." }, { status: 401 });
   }
+  const userId = user.id;
 
   const body = await req.json();
   const { behaviorIds } = body as { behaviorIds: string[] };

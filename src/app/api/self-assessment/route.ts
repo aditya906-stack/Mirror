@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
 
 // GET — the user's self-assessments.
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ assessments: {} });
   }
+  const userId = user.id;
 
   const rows = await db.selfAssessment.findMany({
     where: { userId },
@@ -23,10 +25,11 @@ export async function GET(req: NextRequest) {
 // POST — save the full self-assessment.
 // Body: { ratings: { behaviorId: rating } }
 export async function POST(req: NextRequest) {
-  const userId = req.headers.get("x-user-id");
-  if (!userId) {
+  const user = await getSessionUser(req);
+  if (!user) {
     return NextResponse.json({ error: "No session." }, { status: 401 });
   }
+  const userId = user.id;
 
   const body = await req.json();
   const { ratings } = body as { ratings: Record<string, number> };

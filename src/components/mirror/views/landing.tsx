@@ -82,7 +82,7 @@ export function LandingView() {
 
       <div className="mt-16 flex flex-col items-center gap-4">
         <button
-          onClick={() => setView("setup")}
+          onClick={() => setView("auth")}
           className="group relative w-full max-w-sm overflow-hidden rounded-sm bg-ink px-8 py-4 text-paper transition-all hover:bg-ink/90 sm:w-auto"
         >
           <span className="font-display text-lg">Begin</span>
