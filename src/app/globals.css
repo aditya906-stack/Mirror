@@ -3,11 +3,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  MIRROR — DESIGN SYSTEM
+  The UI must feel like a quiet room. A medical diagnostic report.
+  A high-end instrument. Not a consumer app.
+
+  Principles:
+  - Warm paper, not clinical white. The room is quiet, not sterile.
+  - Ink, not black. Softer, heavier, honest.
+  - No red. No green. No judgment. Only the gap.
+  - Typography carries the weight. Numbers and words matter most.
+  - Whitespace is not empty. It is the silence between observations.
+*/
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -44,72 +69,61 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  --radius: 0.375rem;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* The paper — warm, slightly off-white. Like a fine letterpress. */
+  --paper: oklch(0.975 0.006 85);
+  --background: var(--paper);
+
+  /* The ink — deep, warm near-black. Not pure black. */
+  --ink: oklch(0.22 0.012 50);
+  --ink-soft: oklch(0.42 0.01 50);
+  --ink-faint: oklch(0.62 0.008 50);
+  --foreground: var(--ink);
+
+  /* Lines — barely there, like rules in a notebook. */
+  --line: oklch(0.88 0.006 70);
+  --line-soft: oklch(0.92 0.005 70);
+  --border: var(--line);
+  --input: var(--line);
+
+  /* Surfaces */
+  --surface: oklch(0.99 0.004 85);
+  --surface-raised: oklch(1 0 0);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.995 0.004 85);
+  --popover-foreground: var(--ink);
+
+  /* Primary — the ink itself. The mark on the paper. */
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: oklch(0.94 0.006 70);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.94 0.006 70);
+  --muted-foreground: var(--ink-soft);
+  --accent: oklch(0.94 0.006 70);
+  --accent-foreground: var(--ink);
+
+  /* Destructive kept for shadcn compatibility, but we do not judge. */
+  --destructive: oklch(0.5 0.02 30);
+  --ring: var(--ink-soft);
+
+  /* Charts — monochrome ink scale. No red, no green. */
+  --chart-1: oklch(0.22 0.012 50);
+  --chart-2: oklch(0.42 0.01 50);
+  --chart-3: oklch(0.55 0.008 50);
+  --chart-4: oklch(0.7 0.006 50);
+  --chart-5: oklch(0.85 0.005 50);
+
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: oklch(0.94 0.006 70);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ink-soft);
 }
 
 @layer base {
@@ -117,6 +131,41 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-paper text-ink font-sans;
+    font-feature-settings: "ss01", "cv01", "cv03";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
+
+  /* The serif is reserved for moments of weight —
+     the questions, the numbers, the truths. */
+  .font-display {
+    font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* The custom scrollbar — thin, quiet, ink. */
+.scroll-quiet::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-quiet::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-quiet::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+.scroll-quiet::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+/* A faint paper grain — barely perceptible texture. */
+.paper-grain {
+  background-image:
+    radial-gradient(circle at 1px 1px, oklch(0.85 0.006 70 / 0.15) 1px, transparent 0);
+  background-size: 24px 24px;
 }
