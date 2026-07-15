@@ -23,3 +23,21 @@ Stage Summary:
 - The design system uses warm paper + ink + Fraunces serif to achieve the "quiet room with an executive coach" emotional tone.
 - Lint passes. Dev server runs on port 3000.
 - Note: the dev server experiences memory pressure when Chromium (agent-browser) runs alongside it (4GB sandbox, no swap). Pre-compiling routes and reducing Prisma log verbosity mitigated this. The app itself is stable; the constraint is the sandbox memory ceiling during browser testing.
+
+---
+Task ID: 2
+Agent: Z.ai Code (main)
+Task: Fix console error — `NaN` is an invalid value for the `left` css style property in GapBar
+
+Work Log:
+- Read src/components/mirror/gap-bar.tsx and src/components/mirror/views/report.tsx to locate the error source.
+- Root cause: `Math.min(selfPct, extPct)` / `Math.max(selfPct, extPct)` were called on percentage STRINGS (e.g. "28%"). Coercing "%" strings to numbers yields NaN, so `left` and the `calc()` width became NaN and leaked into the inline `style` prop.
+- Fix: compute min/max on the NUMERIC ratings first, then convert to percentage strings via pct(). `leftNum = Math.min(selfRating, externalAverage)`, `rightNum = Math.max(...)`, then `left = pct(leftNum)` and `width = calc(pct(rightNum) - pct(leftNum))`.
+- Verified via Agent Browser: injected persisted Zustand session (mirror:session) + mirror:userId for the fully-populated Jordan user (10 self-assessments, 30 feedback entries across 3 circles).
+- Report view rendered all 10 behaviors: 10 gap segments, 10 self stroke marks, 10 external disc marks — all present.
+- Inspected inline styles of all 10 gap segments: zero NaN values; sample left="28%", width="calc(59.4%)" (Chrome-simplified from calc(94% - 28%)).
+- Console: no errors, no NaN warnings. Lint passes clean.
+
+Stage Summary:
+- GapBar NaN console error resolved. The gap segment now positions/sizes correctly using numeric min/max instead of string min/max.
+- The core Mirror visualization (self stroke ↔ gap segment ↔ observed disc) renders without warnings for all behaviors.

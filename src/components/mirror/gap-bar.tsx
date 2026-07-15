@@ -37,11 +37,16 @@ export function GapBar({
   const selfPct = selfRating !== null ? pct(selfRating) : "0%";
   const extPct = externalAverage !== null ? pct(externalAverage) : "0%";
 
-  const left = hasBoth ? Math.min(selfPct, extPct) : "0%";
-  const right = hasBoth ? Math.max(selfPct, extPct) : "0%";
-  const gapWidth = hasBoth
-    ? `calc(${right} - ${left})`
-    : "0px";
+  // Compute the gap segment using the NUMERIC ratings, then convert to
+  // percentage strings. (Calling Math.min/Math.max on the "%" strings
+  // coerces them to NaN, which leaks into the inline style.)
+  const leftNum = hasBoth ? Math.min(selfRating!, externalAverage!) : null;
+  const rightNum = hasBoth ? Math.max(selfRating!, externalAverage!) : null;
+  const left = leftNum !== null ? pct(leftNum) : "0%";
+  const gapWidth =
+    leftNum !== null && rightNum !== null
+      ? `calc(${pct(rightNum)} - ${pct(leftNum)})`
+      : "0px";
 
   return (
     <div className={cn("w-full", className)}>
