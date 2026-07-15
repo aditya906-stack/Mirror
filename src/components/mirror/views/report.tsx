@@ -267,39 +267,7 @@ export function ReportView() {
             </section>
           )}
 
-          {/* 4. Book recommendations — static-mapped, non-prescriptive */}
-          {books.length > 0 && (
-            <section>
-              <h2 className="mb-4 font-display text-2xl leading-snug text-ink">
-                {t("report.books.h")}
-                <br className="hidden sm:block" />
-                <span className="text-ink-soft">{t("report.books.h2")}</span>
-              </h2>
-              <ul className="mt-6 space-y-5">
-                {books.map((book) => (
-                  <li
-                    key={book.title}
-                    className="border border-line bg-surface px-5 py-5"
-                  >
-                    <p className="font-display text-lg text-ink">
-                      {book.title}
-                    </p>
-                    <p className="mt-1 text-[11px] uppercase tracking-widest text-ink-faint">
-                      {book.author}
-                    </p>
-                    <p className="mt-2 text-sm italic leading-relaxed text-ink-soft">
-                      {book.note}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-[11px] leading-relaxed text-ink-faint">
-                {t("report.booksNote")}
-              </p>
-            </section>
-          )}
-
-          {/* 5. The full reflection — expandable question-by-question detail */}
+          {/* 4. The full reflection — expandable question-by-question detail */}
           <section className="border-t border-line pt-10">
             {!showFull ? (
               <button
@@ -343,7 +311,7 @@ export function ReportView() {
             )}
           </section>
 
-          {/* 6. By circle */}
+          {/* 5. By circle */}
           <section className="border-t border-line pt-10">
             <h2 className="mb-6 font-display text-2xl text-ink">
               {t("report.byCircle")}
@@ -369,6 +337,38 @@ export function ReportView() {
               ))}
             </ul>
           </section>
+
+          {/* 6. Book recommendations — LAST, static-mapped, non-prescriptive */}
+          {books.length > 0 && (
+            <section className="border-t border-line pt-10">
+              <h2 className="mb-4 font-display text-2xl leading-snug text-ink">
+                {t("report.books.h")}
+                <br className="hidden sm:block" />
+                <span className="text-ink-soft">{t("report.books.h2")}</span>
+              </h2>
+              <ul className="mt-6 space-y-5">
+                {books.map((book) => (
+                  <li
+                    key={book.title}
+                    className="border border-line bg-surface px-5 py-5"
+                  >
+                    <p className="font-display text-lg text-ink">
+                      {book.title}
+                    </p>
+                    <p className="mt-1 text-[11px] uppercase tracking-widest text-ink-faint">
+                      {book.author}
+                    </p>
+                    <p className="mt-2 text-sm italic leading-relaxed text-ink-soft">
+                      {book.note}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-[11px] leading-relaxed text-ink-faint">
+                {t("report.booksNote")}
+              </p>
+            </section>
+          )}
 
           {/* 7. Closing note */}
           <section className="border-t border-line pt-10">

@@ -17,7 +17,7 @@ export function BehaviorsView() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const MIN = 5;
+  const MIN = 10;
 
   useEffect(() => {
     (async () => {
