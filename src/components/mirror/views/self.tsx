@@ -103,7 +103,7 @@ export function SelfView() {
         </p>
       </div>
 
-      <div className="space-y-14">
+      <div className="space-y-14 pb-32">
         {Object.entries(grouped).map(([category, behaviors]) => (
           <section key={category}>
             <h2 className="mb-6 font-display text-xl text-ink-soft">
@@ -155,10 +155,14 @@ export function SelfView() {
             <button
               onClick={handleContinue}
               disabled={saving || !complete}
-              className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:opacity-40"
+              className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-30"
             >
               <span className="font-display text-base">
-                {saving ? t("self.saving") : t("self.continue")}
+                {saving
+                  ? t("self.saving")
+                  : !complete
+                  ? t("self.remaining", { n: total - answered })
+                  : t("self.continue")}
               </span>
             </button>
           </div>

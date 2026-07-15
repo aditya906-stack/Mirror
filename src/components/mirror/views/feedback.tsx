@@ -154,7 +154,7 @@ export function FeedbackView({ token }: { token: string }) {
         </div>
 
         {/* The questions */}
-        <div className="space-y-14">
+        <div className="space-y-14 pb-32">
           {Object.entries(grouped).map(([category, behaviors]) => (
             <section key={category}>
               <h2 className="mb-6 font-display text-xl text-ink-soft">

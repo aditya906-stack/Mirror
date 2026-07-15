@@ -171,7 +171,7 @@ export function ReportView() {
 
       {/* ── The Path B report ────────────────────────────────── */}
       {hasSelfAssessment && hasAnyFeedback && summary && (
-        <div className="space-y-20">
+        <div className="space-y-20 pb-32">
           {/* 1. The reflection — a consolidated, observable summary */}
           <section>
             <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">

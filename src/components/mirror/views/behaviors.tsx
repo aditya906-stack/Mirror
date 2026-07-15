@@ -86,7 +86,7 @@ export function BehaviorsView() {
         </p>
       </div>
 
-      <div className="space-y-12">
+      <div className="space-y-12 pb-32">
         {Object.entries(grouped).map(([category, behaviors]) => (
           <section key={category}>
             <h2 className="mb-4 flex items-baseline gap-3 border-b border-line-soft pb-2">
@@ -157,10 +157,14 @@ export function BehaviorsView() {
             <button
               onClick={handleContinue}
               disabled={saving || selected.size < MIN}
-              className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:opacity-40"
+              className="inline-flex items-center gap-3 rounded-sm bg-ink px-6 py-3 text-paper transition-all hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-30"
             >
               <span className="font-display text-base">
-                {saving ? t("behaviors.saving") : t("behaviors.continue")}
+                {saving
+                  ? t("behaviors.saving")
+                  : selected.size < MIN
+                  ? t("behaviors.needMore", { n: MIN - selected.size })
+                  : t("behaviors.continue")}
               </span>
             </button>
           </div>

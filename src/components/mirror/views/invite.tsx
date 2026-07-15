@@ -197,7 +197,7 @@ export function InviteView() {
       </div>
 
       {/* Existing invitations */}
-      <div>
+      <div className="pb-32">
         <h2 className="mb-4 flex items-baseline gap-3 border-b border-line-soft pb-2">
           <span className="font-display text-lg text-ink">{t("invite.invitations")}</span>
           <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
