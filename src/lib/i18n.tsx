@@ -203,6 +203,11 @@ const en: Record<string, string> = {
   "report.nudgeHigher": "Your circles see more of this in you than you do in yourself.",
   "report.nudgeLower": "You see more of this in yourself than your circles observe.",
   "report.nudgeAligned": "This is close to aligned — the distance here is small.",
+  "report.selfShort": "Self",
+  "report.observedShort": "Observed",
+  "report.direction.overestimate": "You see more than your circles observe",
+  "report.direction.underestimate": "Your circles observe more than you see",
+  "report.direction.aligned": "Closely aligned",
   // By category
   "report.whereDistance": "Where the distance lives",
   "report.behaviorsCount": "{n} behaviors",
@@ -439,6 +444,11 @@ const hinglish: Record<string, string> = {
   "report.nudgeHigher": "Circles aapme yeh aapse zyada dekhte hain jo aap khud mein dekhte ho.",
   "report.nudgeLower": "Aap aapme yeh zyada dekhte ho jo circles observe karte hain usse.",
   "report.nudgeAligned": "Yeh kareeb aligned hai — distance yahan chhota hai.",
+  "report.selfShort": "Self",
+  "report.observedShort": "Observed",
+  "report.direction.overestimate": "Aap apne aapme zyada dekhte ho jo circles observe karte hain",
+  "report.direction.underestimate": "Aapke circles aapse zyada observe karte hain",
+  "report.direction.aligned": "Kareeb aligned",
   // By category
   "report.whereDistance": "Distance kahan hai",
   "report.behaviorsCount": "{n} behaviors",

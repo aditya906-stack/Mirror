@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
+import { getInsight, getDirection, type GapDirection } from "@/lib/insights";
 import { GapBar } from "../gap-bar";
 import { ratingLabel } from "../rating-scale";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ type Report = {
 export function ReportView() {
   const { setView } = useMirror();
   const t = useT();
+  const { locale } = useI18n();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFull, setShowFull] = useState(false);
@@ -181,20 +183,21 @@ export function ReportView() {
             />
           </section>
 
-          {/* 2. Worth sitting with — gentle nudges, never commands */}
+          {/* 2. Worth sitting with — behavior-specific insights, never commands */}
           {summary.widestGaps.length > 0 && (
             <section>
               <h2 className="mb-6 font-display text-2xl text-ink">
                 {t("report.worthSitting")}
               </h2>
-              <ul className="space-y-6">
+              <ul className="space-y-8">
                 {summary.widestGaps.slice(0, 3).map((g) => {
-                  const nudgeKey =
-                    g.gap > 0.5
-                      ? "report.nudgeHigher"
-                      : g.gap < -0.5
-                      ? "report.nudgeLower"
-                      : "report.nudgeAligned";
+                  const insight = getInsight(
+                    g.text,
+                    g.selfRating,
+                    g.externalAverage,
+                    locale
+                  );
+                  const dir = getDirection(g.selfRating, g.externalAverage);
                   return (
                     <li
                       key={g.id}
@@ -203,13 +206,20 @@ export function ReportView() {
                       <p className="font-display text-lg leading-snug text-ink">
                         {g.text}
                       </p>
-                      <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                        {t("report.worthLine", {
-                          self: g.selfRating.toFixed(1),
-                          ext: g.externalAverage.toFixed(1),
-                          nudge: t(nudgeKey),
-                        })}
+                      <p className="mt-2 text-[11px] uppercase tracking-wider text-ink-faint">
+                        {t("report.selfShort")}: {g.selfRating.toFixed(1)} ·{" "}
+                        {t("report.observedShort")}: {g.externalAverage.toFixed(1)} ·{" "}
+                        {dir === "higher"
+                          ? t("report.direction.overestimate")
+                          : dir === "lower"
+                          ? t("report.direction.underestimate")
+                          : t("report.direction.aligned")}
                       </p>
+                      {insight && (
+                        <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                          {insight}
+                        </p>
+                      )}
                     </li>
                   );
                 })}
@@ -326,7 +336,7 @@ export function ReportView() {
                 </p>
                 <div className="space-y-12">
                   {behaviors.map((b, idx) => (
-                    <BehaviorReport key={b.id} behavior={b} index={idx} />
+                    <BehaviorReport key={b.id} behavior={b} index={idx} locale={locale} />
                   ))}
                 </div>
               </div>
@@ -492,22 +502,24 @@ function ReflectionSummary({
 function BehaviorReport({
   behavior,
   index,
+  locale,
 }: {
   behavior: BehaviorRow;
   index: number;
+  locale: "en" | "hinglish";
 }) {
   const t = useT();
   const { selfRating, externalAverage, gap, circles, text, category } =
     behavior;
 
-  const dirKey =
-    gap === null
-      ? null
-      : gap > 0
-      ? "report.detail.dirMore"
-      : gap < 0
-      ? "report.detail.dirLess"
-      : "report.detail.dirAligned";
+  const insight =
+    selfRating !== null && externalAverage !== null
+      ? getInsight(text, selfRating, externalAverage, locale)
+      : null;
+  const dir =
+    selfRating !== null && externalAverage !== null
+      ? getDirection(selfRating, externalAverage)
+      : null;
 
   return (
     <article className="border-b border-line-soft pb-10">
@@ -568,6 +580,22 @@ function BehaviorReport({
         gap={gap}
       />
 
+      {/* Behavior-specific insight — the psychological reflection */}
+      {insight && dir && (
+        <div className="mt-6 border-t border-line-soft pt-4">
+          <p className="mb-2 text-[10px] uppercase tracking-widest text-ink-faint">
+            {dir === "higher"
+              ? t("report.direction.overestimate")
+              : dir === "lower"
+              ? t("report.direction.underestimate")
+              : t("report.direction.aligned")}
+          </p>
+          <p className="text-sm leading-relaxed text-ink-soft">
+            {insight}
+          </p>
+        </div>
+      )}
+
       {circles.length > 0 && (
         <div className="mt-6 border-t border-line-soft pt-3">
           <p className="mb-2 text-[10px] uppercase tracking-widest text-ink-faint">
@@ -590,10 +618,6 @@ function BehaviorReport({
             ))}
           </ul>
         </div>
-      )}
-
-      {dirKey && (
-        <p className="mt-3 text-[11px] italic text-ink-faint">{t(dirKey)}</p>
       )}
     </article>
   );
