@@ -6,7 +6,8 @@ import { Question, type BehaviorQuestion } from "../question";
 import { Wordmark } from "../wordmark";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useT, useI18n } from "@/lib/i18n";
+import { CHARACTER_QUESTIONS } from "@/lib/character";
 
 type FeedbackData = {
   invitation: {
@@ -17,12 +18,15 @@ type FeedbackData = {
   };
   behaviors: (BehaviorQuestion & { category: string })[];
   priorRatings: Record<string, number>;
+  priorCharacterRatings: Record<string, number>;
 };
 
 export function FeedbackView({ token }: { token: string }) {
   const t = useT();
+  const { locale } = useI18n();
   const [data, setData] = useState<FeedbackData | null>(null);
   const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [charRatings, setCharRatings] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -36,6 +40,7 @@ export function FeedbackView({ token }: { token: string }) {
         );
         setData(res);
         setRatings(res.priorRatings);
+        setCharRatings(res.priorCharacterRatings || {});
         if (res.invitation.status === "completed") {
           setDone(true);
         }
@@ -62,16 +67,30 @@ export function FeedbackView({ token }: { token: string }) {
   const answered = Object.keys(ratings).filter(
     (k) => data?.behaviors.some((b) => b.id === k)
   ).length;
+  const charTotal = CHARACTER_QUESTIONS.length;
+  const charAnswered = Object.keys(charRatings).filter((k) =>
+    CHARACTER_QUESTIONS.some((q) => q.id === k)
+  ).length;
   const complete = total > 0 && answered >= total;
+  const charComplete = charAnswered >= charTotal;
+  const allComplete = complete && charComplete;
 
   async function handleSubmit() {
     if (!complete) {
       toast.error(t("feedback.errComplete"));
       return;
     }
+    if (!charComplete) {
+      toast.error(t("feedback.errCharComplete"));
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.post("/api/feedback", { token, ratings });
+      await api.post("/api/feedback", {
+        token,
+        ratings,
+        characterRatings: charRatings,
+      });
       setDone(true);
       toast.success(t("feedback.success"));
     } catch (err) {
@@ -153,57 +172,152 @@ export function FeedbackView({ token }: { token: string }) {
           </div>
         </div>
 
-        {/* The questions */}
-        <div className="space-y-14 pb-32">
-          {Object.entries(grouped).map(([category, behaviors]) => (
-            <section key={category}>
-              <h2 className="mb-6 font-display text-xl text-ink-soft">
-                {category}
-              </h2>
-              <ul className="space-y-10">
-                {behaviors.map((b) => (
-                  <li key={b.id} className="border-b border-line-soft pb-8">
-                    <div className="mb-5 flex items-start gap-4">
-                      <span
-                        className={cn(
-                          "mt-1.5 h-1.5 w-1.5 flex-none rounded-full transition-colors",
-                          ratings[b.id] ? "bg-ink" : "bg-ink-faint/30"
-                        )}
-                      />
-                      <div className="flex-1">
-                        <Question
-                          behavior={b}
-                          value={ratings[b.id] ?? null}
-                          onChange={(v) =>
-                            setRatings((prev) => ({ ...prev, [b.id]: v }))
-                          }
-                          subject={subject}
+        {/* ── Part 1: Behavioral questions ─────────────────── */}
+        <div className="mb-16">
+          <h2 className="mb-2 font-display text-2xl text-ink">
+            {t("feedback.part1.h")}
+          </h2>
+          <p className="mb-10 text-sm leading-relaxed text-ink-soft">
+            {t("feedback.part1.body", { name: subject })}
+          </p>
+          <div className="space-y-14">
+            {Object.entries(grouped).map(([category, behaviors]) => (
+              <section key={category}>
+                <h3 className="mb-6 font-display text-xl text-ink-soft">
+                  {category}
+                </h3>
+                <ul className="space-y-10">
+                  {behaviors.map((b) => (
+                    <li key={b.id} className="border-b border-line-soft pb-8">
+                      <div className="mb-5 flex items-start gap-4">
+                        <span
+                          className={cn(
+                            "mt-1.5 h-1.5 w-1.5 flex-none rounded-full transition-colors",
+                            ratings[b.id] ? "bg-ink" : "bg-ink-faint/30"
+                          )}
                         />
+                        <div className="flex-1">
+                          <Question
+                            behavior={b}
+                            value={ratings[b.id] ?? null}
+                            onChange={(v) =>
+                              setRatings((prev) => ({ ...prev, [b.id]: v }))
+                            }
+                            subject={subject}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Part 2: Character questions (friend-only) ────── */}
+        <div className="border-t-2 border-ink pt-12">
+          <h2 className="mb-2 font-display text-2xl text-ink">
+            {t("feedback.part2.h")}
+          </h2>
+          <p className="mb-2 text-sm leading-relaxed text-ink-soft">
+            {t("feedback.part2.body", { name: subject })}
+          </p>
+          <p className="mb-10 text-[11px] italic leading-relaxed text-ink-faint">
+            {t("feedback.part2.note")}
+          </p>
+          <div className="space-y-10">
+            {CHARACTER_QUESTIONS.map((q, idx) => {
+              const prompt = q.prompt[locale].replace(/\{name\}/g, subject);
+              const options = q.options.map((o) => o[locale]);
+              const v = charRatings[q.id] ?? null;
+              return (
+                <div key={q.id} className="border-b border-line-soft pb-8">
+                  <div className="mb-1 flex items-baseline gap-3">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-widest text-ink-faint">
+                      {q.trait}
+                    </span>
+                  </div>
+                  <p className="mb-5 font-display text-lg leading-snug text-ink sm:text-xl">
+                    {prompt}
+                  </p>
+                  <div className="space-y-2">
+                    {options.map((opt, i) => {
+                      const val = i + 1;
+                      const selected = v === val;
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() =>
+                            setCharRatings((prev) => ({ ...prev, [q.id]: val }))
+                          }
+                          className={cn(
+                            "group flex w-full items-start gap-3 rounded-sm border px-4 py-3 text-left transition-all duration-200",
+                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink/40",
+                            selected
+                              ? "border-ink bg-ink text-paper"
+                              : "border-line bg-surface hover:border-ink-soft text-ink"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "mt-0.5 flex h-5 w-5 flex-none items-center justify-center border text-[10px] font-mono transition-colors",
+                              selected
+                                ? "border-paper bg-paper text-ink"
+                                : "border-ink-faint text-transparent group-hover:border-ink"
+                            )}
+                          >
+                            {String.fromCharCode(65 + i)}
+                          </span>
+                          <span className="font-display text-sm leading-snug sm:text-base">
+                            {opt}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Submit */}
         <div className="sticky bottom-0 -mx-5 mt-12 border-t border-line bg-paper/90 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-2xl text-ink">{answered}</span>
-              <span className="text-[11px] uppercase tracking-wider text-ink-soft">
-                {t("feedback.ofTotal", { total })}
-              </span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-2xl text-ink">{answered}/{total}</span>
+                <span className="text-[11px] uppercase tracking-wider text-ink-soft">
+                  {t("feedback.behaviorsDone")}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className={cn("font-display text-lg", charComplete ? "text-ink" : "text-ink-faint")}>
+                  {charAnswered}/{charTotal}
+                </span>
+                <span className="text-[11px] uppercase tracking-wider text-ink-faint">
+                  {t("feedback.characterDone")}
+                </span>
+              </div>
             </div>
             <button
               onClick={handleSubmit}
-              disabled={submitting || !complete}
-              className="inline-flex items-center gap-3 rounded-sm bg-ink px-8 py-3.5 text-paper transition-all hover:bg-ink/90 disabled:opacity-40"
+              disabled={submitting || !allComplete}
+              className="inline-flex items-center gap-3 rounded-sm bg-ink px-8 py-3.5 text-paper transition-all hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className="font-display text-base">
-                {submitting ? t("feedback.submitting") : t("feedback.submit")}
+                {submitting
+                  ? t("feedback.submitting")
+                  : !complete
+                  ? t("feedback.needBehaviors")
+                  : !charComplete
+                  ? t("feedback.needCharacter", { n: charTotal - charAnswered })
+                  : t("feedback.submit")}
               </span>
             </button>
           </div>

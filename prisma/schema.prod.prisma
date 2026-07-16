@@ -90,8 +90,9 @@ model Invitation {
   createdAt    DateTime  @default(now())
   completedAt  DateTime?
 
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  feedback Feedback[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedback          Feedback[]
+  characterFeedback CharacterFeedback[]
 
   @@index([userId])
 }
@@ -110,4 +111,22 @@ model Feedback {
 
   @@unique([invitationId, behaviorId])
   @@index([behaviorId])
+}
+
+// A provider's answer to a CHARACTER question (the friend-only instrument).
+// These questions are NOT the behavioral self-assessment — they are a
+// separate set the friend answers about the subject, designed to reveal
+// character patterns. See src/lib/character.ts for the question definitions.
+// `questionId` references the static question id in character.ts.
+model CharacterFeedback {
+  id           String   @id @default(cuid())
+  invitationId String
+  questionId   String
+  rating       Int
+  createdAt    DateTime @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationId, questionId])
+  @@index([questionId])
 }

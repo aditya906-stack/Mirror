@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useMirror } from "@/lib/store";
 import { useI18n, useT } from "@/lib/i18n";
-import { getInsight, getDirection, type GapDirection } from "@/lib/insights";
+import { getInsight, getDirection } from "@/lib/insights";
+import { ARCHETYPES, type ArchetypeKey } from "@/lib/character";
 import { GapBar } from "../gap-bar";
 import { ratingLabel } from "../rating-scale";
 import { toast } from "sonner";
@@ -44,6 +45,17 @@ type Summary = {
 
 type BookRec = { title: string; author: string; note: string };
 
+type Archetype = {
+  key: ArchetypeKey;
+  philosopher: string;
+  label: string;
+  description: string;
+  quotes: string[];
+  solution: string;
+  responderCount: number;
+  questionCount: number;
+};
+
 type Report = {
   subject: { name: string };
   behaviors: BehaviorRow[];
@@ -53,7 +65,9 @@ type Report = {
   behaviorCount: number;
   hasSelfAssessment: boolean;
   hasAnyFeedback: boolean;
+  hasCharacterData: boolean;
   summary: Summary | null;
+  archetype: Archetype | null;
   books: BookRec[];
 };
 
@@ -99,7 +113,9 @@ export function ReportView() {
     behaviorCount,
     hasSelfAssessment,
     hasAnyFeedback,
+    hasCharacterData,
     summary,
+    archetype,
     books,
   } = report;
 
@@ -183,7 +199,16 @@ export function ReportView() {
             />
           </section>
 
-          {/* 2. Worth sitting with — behavior-specific insights, never commands */}
+          {/* 2. Behaviour Analysis — the archetype, the philosopher, the solution */}
+          {archetype && hasCharacterData && (
+            <BehaviourAnalysis
+              archetypeKey={archetype.key}
+              responderCount={archetype.responderCount}
+              locale={locale}
+            />
+          )}
+
+          {/* 3. Worth sitting with — behavior-specific insights, never commands */}
           {summary.widestGaps.length > 0 && (
             <section>
               <h2 className="mb-6 font-display text-2xl text-ink">
@@ -495,6 +520,83 @@ function ReflectionSummary({
         )}
       </div>
     </div>
+  );
+}
+
+// ── Behaviour Analysis — the archetype held up by a philosopher ──
+// This is the heart of the friend-only character instrument. The friends'
+// answers resolve to a single dominant pattern — a "term." That term maps
+// to a philosopher whose words hold up the mirror: "aap aise ho."
+// Below: the solution — "aise normal ho sakte ho."
+function BehaviourAnalysis({
+  archetypeKey,
+  responderCount,
+  locale,
+}: {
+  archetypeKey: ArchetypeKey;
+  responderCount: number;
+  locale: "en" | "hinglish";
+}) {
+  const t = useT();
+  const a = ARCHETYPES[archetypeKey];
+  const label = a.label[locale];
+  const philosopher = a.philosopher[locale];
+  const description = a.description[locale];
+  const solution = a.solution[locale];
+
+  return (
+    <section className="border-t border-line pt-10">
+      <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        {t("report.behaviourAnalysis")}
+      </span>
+
+      {/* The term */}
+      <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
+        {label}
+      </h2>
+      <p className="mt-2 text-sm text-ink-faint">
+        {t("report.basedOn", { n: responderCount })}
+      </p>
+
+      {/* "Aap aise ho" — what the pattern looks like */}
+      <div className="mt-8 border-l-2 border-ink pl-6">
+        <p className="mb-3 text-[11px] uppercase tracking-widest text-ink-faint">
+          {t("report.youAre")}
+        </p>
+        <p className="text-base leading-relaxed text-ink">
+          {description}
+        </p>
+      </div>
+
+      {/* Philosopher quotes */}
+      <div className="mt-10">
+        <p className="mb-5 text-[11px] uppercase tracking-widest text-ink-faint">
+          {philosopher} {t("report.holds")}
+        </p>
+        <ul className="space-y-5">
+          {a.quotes.map((q, i) => (
+            <li
+              key={i}
+              className="border border-line bg-surface px-5 py-5"
+            >
+              <p className="font-display text-lg italic leading-relaxed text-ink-soft">
+                {q}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* "Aise normal ho sakte ho" — the solution */}
+      <div className="mt-10 border-l-2 border-ink pl-6">
+        <p className="mb-3 text-[11px] uppercase tracking-widest text-ink-faint">
+          {t("report.solution")}
+        </p>
+        <p className="text-base leading-relaxed text-ink">
+          {solution}
+        </p>
+      </div>
+    </section>
   );
 }
 

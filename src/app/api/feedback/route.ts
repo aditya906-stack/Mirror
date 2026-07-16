@@ -5,7 +5,11 @@ import { db } from "@/lib/db";
 //
 // A provider arrives via a confidential link: /?feedback=TOKEN
 // They never see who else was invited. They never see the user's
-// self-assessment. They only see the questions and submit their answers.
+// self-assessment. They see TWO sets of questions:
+//   1. The behavioral questions (same ones the user self-assessed on)
+//   2. A CHARACTER instrument — 12 friend-only questions designed to
+//      reveal the subject's character pattern. The subject never sees
+//      these and never answers them. Only friends do.
 //
 // Confidential, not anonymous: the circle is recorded with each response,
 // but the individual provider's identity is hidden from the subject
@@ -52,6 +56,16 @@ export async function GET(req: NextRequest) {
     priorRatings[f.behaviorId] = f.rating;
   }
 
+  // Prior character responses (if the provider is revisiting).
+  const priorCharacter = await db.characterFeedback.findMany({
+    where: { invitationId: invitation.id },
+  });
+
+  const priorCharacterRatings: Record<string, number> = {};
+  for (const c of priorCharacter) {
+    priorCharacterRatings[c.questionId] = c.rating;
+  }
+
   return NextResponse.json({
     invitation: {
       token: invitation.token,
@@ -70,16 +84,22 @@ export async function GET(req: NextRequest) {
         : null,
     })),
     priorRatings,
+    priorCharacterRatings,
   });
 }
 
 // POST — submit the confidential feedback.
-// Body: { token: string, ratings: { behaviorId: rating } }
+// Body: {
+//   token: string,
+//   ratings: { behaviorId: rating },          // behavioral questions
+//   characterRatings?: { questionId: rating } // character questions (optional but encouraged)
+// }
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { token, ratings } = body as {
+  const { token, ratings, characterRatings } = body as {
     token?: string;
     ratings?: Record<string, number>;
+    characterRatings?: Record<string, number>;
   };
 
   if (!token || !ratings) {
@@ -132,6 +152,53 @@ export async function POST(req: NextRequest) {
       rating,
     })),
   });
+
+  // ── Character responses (the friend-only instrument) ──────
+  // These are optional in the payload but strongly encouraged — the
+  // report's Behaviour Analysis section depends on them. We store
+  // whatever valid responses arrive; missing ones simply don't count.
+  if (characterRatings && typeof characterRatings === "object") {
+    const validQuestionIds = new Set(
+      // Import-safe: the question ids are static strings defined in character.ts.
+      // We validate against the known set to prevent junk data.
+      [
+        "char-accountability",
+        "char-humility",
+        "char-empathy",
+        "char-regulation",
+        "char-honesty",
+        "char-feedback",
+        "char-integrity",
+        "char-respect",
+        "char-dominance",
+        "char-assertiveness",
+        "char-intellectual-honesty",
+        "char-trustworthiness",
+      ]
+    );
+
+    const charEntries = Object.entries(characterRatings).filter(
+      ([questionId, v]) =>
+        validQuestionIds.has(questionId) &&
+        typeof v === "number" &&
+        v >= 1 &&
+        v <= 5
+    );
+
+    if (charEntries.length > 0) {
+      await db.characterFeedback.deleteMany({
+        where: { invitationId: invitation.id },
+      });
+
+      await db.characterFeedback.createMany({
+        data: charEntries.map(([questionId, rating]) => ({
+          invitationId: invitation.id,
+          questionId,
+          rating,
+        })),
+      });
+    }
+  }
 
   await db.invitation.update({
     where: { id: invitation.id },

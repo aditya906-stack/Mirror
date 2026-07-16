@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import {
+  scoreArchetype,
+  getArchetype,
+  type ArchetypeKey,
+} from "@/lib/character";
 
 // THE REPORT.
 //
@@ -67,6 +72,37 @@ const BOOKS: Record<string, BookRec> = {
     author: "Susan Cain",
     note: "on the dignity of being accurately known",
   },
+  // ── Psychology classics (always relevant to self-reflection) ──
+  kahneman: {
+    title: "Thinking, Fast and Slow",
+    author: "Daniel Kahneman",
+    note: "on the two systems that drive how you think — and where they quietly mislead you",
+  },
+  cialdini: {
+    title: "Influence",
+    author: "Robert Cialdini",
+    note: "on the invisible levers that move people — including you",
+  },
+  haidt: {
+    title: "The Righteous Mind",
+    author: "Jonathan Haidt",
+    note: "on why good people disagree, and the intuition that runs ahead of reason",
+  },
+  tavris: {
+    title: "Mistakes Were Made (But Not by Me)",
+    author: "Carol Tavris & Elliot Aronson",
+    note: "on self-justification — the quiet machinery that protects the self from its own gaps",
+  },
+  yalom: {
+    title: "The Gift of Therapy",
+    author: "Irvin Yalom",
+    note: "on what it means to sit with another person, honestly",
+  },
+  greene: {
+    title: "The Laws of Human Nature",
+    author: "Robert Greene",
+    note: "on the patterns beneath what people do — read critically, verify with research",
+  },
 };
 
 export async function GET(req: NextRequest) {
@@ -90,7 +126,7 @@ export async function GET(req: NextRequest) {
     db.selfAssessment.findMany({ where: { userId } }),
     db.invitation.findMany({
       where: { userId },
-      include: { feedback: true },
+      include: { feedback: true, characterFeedback: true },
     }),
   ]);
 
@@ -339,6 +375,62 @@ export async function GET(req: NextRequest) {
     books = picked;
   }
 
+  // ── Psychology classics — always offered as deeper reading ──
+  // These six books are the research backbone beneath Mirror. They are
+  // not tied to a specific gap; they are for anyone who wants to
+  // understand the patterns more deeply. Appended after the gap-based
+  // recommendations so the report closes with the wider lens.
+  const psychologyClassics: BookRec[] = [
+    BOOKS.kahneman,
+    BOOKS.cialdini,
+    BOOKS.haidt,
+    BOOKS.tavris,
+    BOOKS.yalom,
+    BOOKS.greene,
+  ];
+  books = [...books, ...psychologyClassics];
+
+  // ── Character analysis (the friend-only instrument) ────────
+  // Aggregate all friends' character responses across all completed
+  // invitations, then derive the dominant archetype.
+  let archetype: {
+    key: ArchetypeKey;
+    philosopher: string;
+    label: string;
+    description: string;
+    quotes: string[];
+    solution: string;
+    responderCount: number;
+    questionCount: number;
+  } | null = null;
+
+  const charResponses: Record<string, number[]> = {};
+  let charResponderCount = 0;
+  for (const inv of invitations) {
+    if (inv.status !== "completed") continue;
+    if (inv.characterFeedback.length === 0) continue;
+    charResponderCount++;
+    for (const cf of inv.characterFeedback) {
+      if (!charResponses[cf.questionId]) charResponses[cf.questionId] = [];
+      charResponses[cf.questionId].push(cf.rating);
+    }
+  }
+
+  if (charResponderCount > 0) {
+    const result = scoreArchetype(charResponses);
+    const a = getArchetype(result.key);
+    archetype = {
+      key: a.key,
+      philosopher: a.philosopher.en,
+      label: a.label.en,
+      description: a.description.en,
+      quotes: a.quotes,
+      solution: a.solution.en,
+      responderCount: result.responderCount,
+      questionCount: result.questionCount,
+    };
+  }
+
   return NextResponse.json({
     subject: { name: user.name },
     behaviors,
@@ -348,7 +440,9 @@ export async function GET(req: NextRequest) {
     behaviorCount: selected.length,
     hasSelfAssessment: selfAssessments.length > 0,
     hasAnyFeedback: completedProviders > 0,
+    hasCharacterData: charResponderCount > 0,
     summary,
+    archetype,
     books,
   });
 }

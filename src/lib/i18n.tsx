@@ -187,6 +187,11 @@ const en: Record<string, string> = {
   "report.noFeedback.btn": "Manage invitations",
   // Summary
   "report.reflection": "The reflection",
+  "report.behaviourAnalysis": "Behaviour analysis",
+  "report.basedOn": "based on what {n} friend(s) observed",
+  "report.youAre": "This is how you are",
+  "report.holds": "holds up the mirror",
+  "report.solution": "How you can find balance",
   "report.selfAvg": "How you see yourself",
   "report.extAvg": "How your circles see you",
   "report.onAverage": "on average",
@@ -257,13 +262,23 @@ const en: Record<string, string> = {
   "feedback.done.body":
     "Your observations of {name} have been recorded. They will appear in {name}'s Mirror report as part of the {circle} circle — confidentially. Your individual identity will not be shown.",
   "feedback.done.closing": "You have offered an honest reflection. That is a quiet gift.",
-  "feedback.errComplete": "Please answer every question.",
+  "feedback.errComplete": "Please answer every behavioral question.",
+  "feedback.errCharComplete": "Please answer every character question too.",
   "feedback.submit": "Submit in confidence",
   "feedback.submitting": "Submitting…",
   "feedback.success": "Thank you. Your observations have been recorded.",
   "feedback.errSubmit": "Could not submit.",
   "feedback.ofTotal": "of {total} answered",
-};
+  "feedback.part1.h": "Part 1 — Behaviors",
+  "feedback.part1.body": "How often {name} does each of these things.",
+  "feedback.part2.h": "Part 2 — A deeper look",
+  "feedback.part2.body": "Now, a different kind of question. Not how often — but how. These twelve questions look at the pattern beneath the behaviors. Answer based on what you have actually seen {name} do.",
+  "feedback.part2.note": "These answers shape the character analysis in {name}'s report. They are confidential — {name} will see the pattern, never who said what.",
+  "feedback.behaviorsDone": "behaviors",
+  "feedback.characterDone": "character",
+  "feedback.needBehaviors": "Answer all behaviors first",
+  "feedback.needCharacter": "{n} character Qs left",
+}
 
 const hinglish: Record<string, string> = {
   // ── Header / nav ──
@@ -430,6 +445,11 @@ const hinglish: Record<string, string> = {
   "report.noFeedback.btn": "Invitations manage karo",
   // Summary
   "report.reflection": "Reflection",
+  "report.behaviourAnalysis": "Behaviour analysis",
+  "report.basedOn": "{n} dost ke observation pe based",
+  "report.youAre": "Aap aise ho",
+  "report.holds": "aaina utha ke rakhte hain",
+  "report.solution": "Aise normal kaise ho sakte ho",
   "report.selfAvg": "Aap khud ko jaise dekhte ho",
   "report.extAvg": "Aapke circles aapko jaise dekhte hain",
   "report.onAverage": "average mein",
@@ -500,12 +520,22 @@ const hinglish: Record<string, string> = {
   "feedback.done.body":
     "{name} ke baare mein aapki observations record ho gayi. Yeh {name} ki Mirror report mein {circle} circle ke hisse mein aayegi — confidentially. Aapki individual identity nahi dikhegi.",
   "feedback.done.closing": "Aapne ek imandaar reflection di. Yeh ek chuppa tohfa hai.",
-  "feedback.errComplete": "Har sawaal ka jawab do please.",
+  "feedback.errComplete": "Har behavior sawaal ka jawab do please.",
+  "feedback.errCharComplete": "Har character sawaal ka bhi jawab do please.",
   "feedback.submit": "Confidentially submit karo",
   "feedback.submitting": "Submit ho raha hai…",
   "feedback.success": "Thank you. Aapki observations record ho gayi.",
   "feedback.errSubmit": "Submit nahi hua.",
   "feedback.ofTotal": "{total} mein se",
+  "feedback.part1.h": "Part 1 — Behaviors",
+  "feedback.part1.body": "{name} ye cheezein kitni baar karte ho.",
+  "feedback.part2.h": "Part 2 — Ek gehra nazar",
+  "feedback.part2.body": "Ab ek alag tarah ka sawaal. Kitni baar nahi — kaise. Ye baarah sawaal behaviors ke neeche jo pattern hai usko dekhte hain. {name} ko je karte hue dekha hai uske hisaab se jawab do.",
+  "feedback.part2.note": "Ye answers {name} ke report me character analysis banate hain. Confidential hain — {name} pattern dekhega, kabhi ye nahi ki kisne kya kaha.",
+  "feedback.behaviorsDone": "behaviors",
+  "feedback.characterDone": "character",
+  "feedback.needBehaviors": "Pehle saare behaviors jawab karo",
+  "feedback.needCharacter": "{n} character Qs bache",
 };
 
 const dicts: Record<Locale, Record<string, string>> = { en, hinglish };
